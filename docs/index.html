@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<style id="auth-gate-style">
+body>*:not(#auth-gate){display:none!important}
+#auth-gate{display:flex!important;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:99999;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#auth-gate .box{max-width:340px;width:100%;padding:2rem;text-align:center}
+#auth-gate h1{font-size:1.1rem;color:#fff;margin-bottom:1.5rem;font-weight:500}
+#auth-gate input{width:100%;padding:.65rem 1rem;background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:1rem;outline:none;margin-bottom:.6rem}
+#auth-gate input:focus{border-color:#666}
+#auth-gate button{width:100%;padding:.65rem;background:#fff;color:#000;border:none;border-radius:6px;font-size:.9rem;font-weight:600;cursor:pointer}
+#auth-gate button:hover{background:#ddd}
+#auth-gate .err{color:#f44;font-size:.8rem;margin-top:.5rem;visibility:hidden}
+#auth-gate .err.show{visibility:visible}
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>awabar シフトエージェント ドキュメント</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.container { max-width: 480px; width: 100%; padding: 2rem; }
+h1 { font-size: 1.4rem; margin-bottom: 0.5rem; color: #fff; }
+.sub { color: #888; font-size: 0.85rem; margin-bottom: 2rem; }
+.links { display: flex; flex-direction: column; gap: 1rem; }
+a { display: block; padding: 1.2rem 1.5rem; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; text-decoration: none; color: #e0e0e0; transition: all 0.2s; }
+a:hover { background: #222; border-color: #555; }
+a .title { font-size: 1rem; font-weight: 600; color: #fff; }
+a .desc { font-size: 0.8rem; color: #888; margin-top: 0.3rem; }
+</style>
+</head>
+<body>
+<div id="auth-gate">
+<div class="box">
+<h1>パスワードを入力してください</h1>
+<form id="auth-form">
+<input type="password" id="auth-pw" placeholder="パスワード" autofocus required>
+<button type="submit">入る</button>
+</form>
+<p class="err" id="auth-err">パスワードが違います</p>
+</div>
+</div>
+<script>
+(function(){
+var K="awabar-docs-auth";
+if(sessionStorage.getItem(K)==="ok"){
+document.getElementById("auth-gate").remove();
+document.getElementById("auth-gate-style").remove();
+return;
+}
+document.getElementById("auth-form").addEventListener("submit",function(e){
+e.preventDefault();
+if(document.getElementById("auth-pw").value==="nikarasu"){
+sessionStorage.setItem(K,"ok");
+document.getElementById("auth-gate").remove();
+document.getElementById("auth-gate-style").remove();
+}else{
+document.getElementById("auth-err").classList.add("show");
+document.getElementById("auth-pw").value="";
+document.getElementById("auth-pw").focus();
+}
+});
+})();
+</script>
+<div class="container">
+  <h1>awabar シフトエージェント</h1>
+  <p class="sub">ドキュメント一覧</p>
+  <div class="links">
+    <a href="/briefing.html">
+      <div class="title">設計ブリーフィング</div>
+      <div class="desc">システム全体像・設計方針・技術選定の説明資料</div>
+    </a>
+    <a href="/hearing.html">
+      <div class="title">牛ノ浜さんヒアリング資料</div>
+      <div class="desc">2/28 現場ヒアリング用 — 現状→エージェント化→GAP質問</div>
+    </a>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<style id="auth-gate-style">
+body>*:not(#auth-gate){display:none!important}
+#auth-gate{display:flex!important;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:99999;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#auth-gate .box{max-width:340px;width:100%;padding:2rem;text-align:center}
+#auth-gate h1{font-size:1.1rem;color:#fff;margin-bottom:1.5rem;font-weight:500}
+#auth-gate input{width:100%;padding:.65rem 1rem;background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:1rem;outline:none;margin-bottom:.6rem}
+#auth-gate input:focus{border-color:#666}
+#auth-gate button{width:100%;padding:.65rem;background:#fff;color:#000;border:none;border-radius:6px;font-size:.9rem;font-weight:600;cursor:pointer}
+#auth-gate button:hover{background:#ddd}
+#auth-gate .err{color:#f44;font-size:.8rem;margin-top:.5rem;visibility:hidden}
+#auth-gate .err.show{visibility:visible}
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>awabar シフトエージェント — 設計ブリーフィング</title>
+<style>
+  :root {
+    --bg: #0c0e14;
+    --bg2: #12151f;
+    --bg3: #181c28;
+    --bg4: #1e2233;
+    --bg5: #252a3a;
+    --tx: #e4e2df;
+    --tx2: #9ca3af;
+    --tx3: #6b7280;
+    --gold: #d4a853;
+    --gold-dim: rgba(212,168,83,0.15);
+    --gold-glow: rgba(212,168,83,0.06);
+    --green: #34d399;
+    --green-dim: rgba(52,211,153,0.12);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.12);
+    --purple: #a78bfa;
+    --purple-dim: rgba(167,139,250,0.12);
+    --orange: #fb923c;
+    --orange-dim: rgba(251,146,60,0.12);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.12);
+    --cyan: #22d3ee;
+    --cyan-dim: rgba(34,211,238,0.12);
+    --border: rgba(255,255,255,0.06);
+    --r: 10px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--tx);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px 100px; }
+
+  /* Header */
+  .hero {
+    text-align: center;
+    padding: 60px 24px 40px;
+    background: linear-gradient(180deg, var(--bg3) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .hero-label {
+    font-size: 0.72rem;
+    color: var(--gold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .hero h1 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+  .hero h1 em { font-style: normal; color: var(--gold); }
+  .hero p { font-size: 0.92rem; color: var(--tx2); max-width: 600px; margin: 0 auto; }
+
+  /* TOC */
+  .toc {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px 24px;
+    margin-bottom: 48px;
+  }
+  .toc-title { font-size: 0.75rem; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; font-weight: 700; }
+  .toc ol { list-style: none; counter-reset: toc; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+  .toc li { counter-increment: toc; }
+  .toc a {
+    color: var(--tx2);
+    text-decoration: none;
+    font-size: 0.88rem;
+    padding: 4px 0;
+    display: block;
+    transition: color 0.15s;
+  }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold); font-weight: 700; font-size: 0.82rem; }
+  .toc a:hover { color: var(--gold); }
+
+  /* Section */
+  .sec { margin-bottom: 56px; }
+  .sec-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; background: var(--gold-dim); color: var(--gold);
+    border-radius: 50%; font-size: 0.82rem; font-weight: 800; margin-right: 10px;
+    border: 1px solid rgba(212,168,83,0.25);
+  }
+  .sec h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; }
+  .sec-sub { font-size: 0.85rem; color: var(--tx3); margin-bottom: 20px; margin-left: 40px; }
+
+  /* Cards */
+  .card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px 24px;
+    margin-bottom: 12px;
+  }
+  .card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .card p, .card li { font-size: 0.9rem; color: var(--tx2); }
+  .card ul { list-style: none; padding: 0; }
+  .card li { padding: 3px 0 3px 18px; position: relative; }
+  .card li::before { content: ''; position: absolute; left: 0; top: 11px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+
+  /* Before/After */
+  .ba-grid { display: grid; grid-template-columns: 1fr 40px 1fr; gap: 0; align-items: stretch; }
+  .ba-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px;
+  }
+  .ba-card.before { border-left: 3px solid var(--red); }
+  .ba-card.after { border-left: 3px solid var(--green); }
+  .ba-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+  .ba-card.before .ba-label { background: var(--red-dim); color: var(--red); }
+  .ba-card.after .ba-label { background: var(--green-dim); color: var(--green); }
+  .ba-arrow {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; color: var(--tx3);
+  }
+  .ba-step {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .ba-step:last-child { border-bottom: none; }
+  .ba-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 2px; }
+  .ba-text { font-size: 0.85rem; color: var(--tx2); line-height: 1.5; }
+  .ba-text strong { color: var(--tx); }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 32px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 11px; top: 0; bottom: 0;
+    width: 2px; background: linear-gradient(180deg, var(--gold), var(--green));
+  }
+  .tl-item { position: relative; margin-bottom: 24px; }
+  .tl-dot {
+    position: absolute; left: -32px; top: 4px;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; font-weight: 800; color: var(--bg);
+  }
+  .tl-item:nth-child(1) .tl-dot { background: var(--gold); }
+  .tl-item:nth-child(2) .tl-dot { background: var(--orange); }
+  .tl-item:nth-child(3) .tl-dot { background: var(--blue); }
+  .tl-item:nth-child(4) .tl-dot { background: var(--purple); }
+  .tl-item:nth-child(5) .tl-dot { background: var(--cyan); }
+  .tl-item:nth-child(6) .tl-dot { background: var(--green); }
+  .tl-item:nth-child(7) .tl-dot { background: var(--red); }
+  .tl-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 16px 20px;
+  }
+  .tl-when {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.72rem; color: var(--gold);
+    background: var(--gold-glow);
+    padding: 2px 8px; border-radius: 3px;
+    display: inline-block; margin-bottom: 6px;
+    border: 1px solid var(--gold-dim);
+  }
+  .tl-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+  .tl-desc { font-size: 0.85rem; color: var(--tx2); }
+  .tl-who {
+    display: inline-block;
+    font-size: 0.7rem; font-weight: 700;
+    padding: 1px 6px; border-radius: 3px;
+    margin-top: 6px;
+  }
+  .who-agent { background: var(--blue-dim); color: var(--blue); }
+  .who-human { background: var(--orange-dim); color: var(--orange); }
+  .who-engine { background: var(--purple-dim); color: var(--purple); }
+
+  /* Architecture */
+  .arch-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 28px;
+    overflow-x: auto;
+  }
+  .arch-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .arch-node {
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    text-align: center;
+    min-width: 160px;
+    flex: 1;
+    max-width: 220px;
+  }
+  .arch-node-title { font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; }
+  .arch-node-sub { font-size: 0.75rem; color: var(--tx3); }
+  .arch-node-items { font-size: 0.78rem; color: var(--tx2); margin-top: 6px; line-height: 1.5; }
+  .arch-node.inngest { border-color: var(--gold); border-width: 2px; }
+  .arch-node.inngest .arch-node-title { color: var(--gold); }
+  .arch-node.slack { border-color: var(--blue); }
+  .arch-node.slack .arch-node-title { color: var(--blue); }
+  .arch-node.adapter { border-color: var(--cyan); }
+  .arch-node.adapter .arch-node-title { color: var(--cyan); }
+  .arch-node.notion { border-color: var(--green); }
+  .arch-node.notion .arch-node-title { color: var(--green); }
+  .arch-node.cloudrun { border-color: var(--purple); }
+  .arch-node.cloudrun .arch-node-title { color: var(--purple); }
+  .arch-node.agent { border-color: var(--orange); }
+  .arch-node.agent .arch-node-title { color: var(--orange); }
+  .arch-arrow {
+    text-align: center;
+    color: var(--tx3);
+    font-size: 0.82rem;
+    margin: 8px 0;
+  }
+  .arch-label {
+    background: var(--bg5);
+    border-radius: 6px;
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--tx3);
+    margin-bottom: 12px;
+  }
+
+  /* Analogy */
+  .analogy {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .analogy-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 18px 20px;
+  }
+  .analogy-tech {
+    font-size: 0.72rem; font-weight: 800;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .analogy-name { font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
+  .analogy-like {
+    font-size: 0.85rem; color: var(--tx2); margin-bottom: 8px;
+    padding: 8px 12px; background: var(--bg4); border-radius: 6px;
+    border-left: 3px solid var(--gold);
+  }
+  .analogy-detail { font-size: 0.82rem; color: var(--tx3); line-height: 1.6; }
+
+  /* DB cards */
+  .db-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .db-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .db-num {
+    font-family: 'SF Mono', monospace;
+    font-size: 0.68rem; color: var(--green);
+    background: var(--green-dim);
+    padding: 1px 6px; border-radius: 3px;
+    font-weight: 800; display: inline-block;
+    margin-bottom: 6px;
+  }
+  .db-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+  .db-desc { font-size: 0.78rem; color: var(--tx3); line-height: 1.5; }
+  .db-rows { font-size: 0.72rem; color: var(--tx3); margin-top: 6px; }
+
+  /* Cheat sheet */
+  .cheat {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px 24px;
+    margin-bottom: 12px;
+  }
+  .cheat-q {
+    font-weight: 700;
+    font-size: 0.92rem;
+    margin-bottom: 8px;
+    padding-left: 20px;
+    position: relative;
+  }
+  .cheat-q::before {
+    content: 'Q';
+    position: absolute; left: 0; top: 0;
+    font-size: 0.78rem; font-weight: 800; color: var(--gold);
+  }
+  .cheat-a {
+    font-size: 0.88rem;
+    color: var(--tx2);
+    padding-left: 20px;
+    line-height: 1.7;
+    position: relative;
+  }
+  .cheat-a::before {
+    content: 'A';
+    position: absolute; left: 0; top: 0;
+    font-size: 0.78rem; font-weight: 800; color: var(--green);
+  }
+
+  /* Scope */
+  .scope-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  .scope-table th {
+    text-align: left;
+    font-size: 0.72rem;
+    color: var(--tx3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+  }
+  .scope-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    color: var(--tx2);
+    vertical-align: top;
+  }
+  .scope-table tr:hover td { background: var(--bg4); }
+  .scope-new { color: var(--green); font-weight: 700; font-size: 0.75rem; }
+  .scope-mod { color: var(--orange); font-weight: 700; font-size: 0.75rem; }
+
+  /* Risk callout */
+  .callout {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .callout-warn { border-left: 3px solid var(--orange); }
+  .callout-info { border-left: 3px solid var(--blue); }
+  .callout-title { font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; }
+  .callout-text { font-size: 0.85rem; color: var(--tx2); line-height: 1.6; }
+
+  /* Highlight */
+  .hl { color: var(--gold); font-weight: 600; }
+  .hl-green { color: var(--green); font-weight: 600; }
+  .hl-blue { color: var(--blue); font-weight: 600; }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .ba-grid { grid-template-columns: 1fr; }
+    .ba-arrow { transform: rotate(90deg); padding: 8px 0; }
+    .toc ol { grid-template-columns: 1fr; }
+    .analogy { grid-template-columns: 1fr; }
+    .db-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="auth-gate">
+<div class="box">
+<h1>パスワードを入力してください</h1>
+<form id="auth-form">
+<input type="password" id="auth-pw" placeholder="パスワード" autofocus required>
+<button type="submit">入る</button>
+</form>
+<p class="err" id="auth-err">パスワードが違います</p>
+</div>
+</div>
+<script>
+(function(){
+var K="awabar-docs-auth";
+if(sessionStorage.getItem(K)==="ok"){
+document.getElementById("auth-gate").remove();
+document.getElementById("auth-gate-style").remove();
+return;
+}
+document.getElementById("auth-form").addEventListener("submit",function(e){
+e.preventDefault();
+if(document.getElementById("auth-pw").value==="nikarasu"){
+sessionStorage.setItem(K,"ok");
+document.getElementById("auth-gate").remove();
+document.getElementById("auth-gate-style").remove();
+}else{
+document.getElementById("auth-err").classList.add("show");
+document.getElementById("auth-pw").value="";
+document.getElementById("auth-pw").focus();
+}
+});
+})();
+</script>
+
+<div class="hero">
+  <div class="hero-label">Design Briefing</div>
+  <h1>awabar シフトエージェント<br><em>何を、なぜ、どう作るか</em></h1>
+  <p>6本のDeepResearch + コード調査の結果を踏まえた、シフトエージェントの設計仕様と実装ガイド。</p>
+</div>
+
+<div class="wrap">
+
+<nav class="toc">
+  <div class="toc-title">目次</div>
+  <ol>
+    <li><a href="#s1">一言でいうと何を作るのか</a></li>
+    <li><a href="#s2">ビフォー/アフター</a></li>
+    <li><a href="#s3">月次サイクル — ストーリーで理解する</a></li>
+    <li><a href="#s4">技術構成 — 5つのパーツ</a></li>
+    <li><a href="#s5">各パーツをアナロジーで理解する</a></li>
+    <li><a href="#s6">Notionに作る7つのデータベース</a></li>
+    <li><a href="#s7">実装スコープ — 何を書くか</a></li>
+    <li><a href="#s8">設計判断FAQ</a></li>
+    <li><a href="#s9">リスクと注意点</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<div class="sec" id="s1">
+  <h2><span class="sec-num">1</span>一言でいうと何を作るのか</h2>
+  <div class="sec-sub">エレベーターピッチ</div>
+
+  <div class="card" style="border-left: 3px solid var(--gold);">
+    <p style="font-size: 1.05rem; line-height: 1.8; color: var(--tx);">
+      <strong>毎月のシフト作成を「人間がやる作業」から「AIエージェントが回して人間が確認するだけ」に変える。</strong>
+    </p>
+    <p style="margin-top: 12px;">
+      具体的には:<br>
+      毎月1日に自動で希望収集が始まり → 未提出者に毎日催促が飛び → 締切が来たらOR-Toolsで最適シフトを生成し → 店長がNotionで確認して承認ボタンを押し → 全員に確定シフトが通知される。<br><br>
+      欠員が出たら候補者リストをスコア付きで店長に提示し、店長が選んで打診する。<br><br>
+      <span class="hl">店長がやることは「確認」と「承認」だけ。</span>あとは全部エージェントがやる。
+    </p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec" id="s2">
+  <h2><span class="sec-num">2</span>ビフォー/アフター</h2>
+  <div class="sec-sub">牛ノ浜さん（福岡店長）の毎月の体験がどう変わるか</div>
+
+  <div class="ba-grid">
+    <div class="ba-card before">
+      <span class="ba-label">Before（今）</span>
+      <div class="ba-step">
+        <span class="ba-icon">1</span>
+        <div class="ba-text"><strong>牛ノ浜さんがSlackで「来月の希望出して」と投稿</strong><br>毎月手動で声かけ</div>
+      </div>
+      <div class="ba-step">
+        <span class="ba-icon">2</span>
+        <div class="ba-text"><strong>返事が来ない人に個別催促</strong><br>誰が出してないか手動で確認、DM送信</div>
+      </div>
+      <div class="ba-step">
+        <span class="ba-icon">3</span>
+        <div class="ba-text"><strong>Notionに希望を転記</strong><br>Slackの返答をNotionに手入力</div>
+      </div>
+      <div class="ba-step">
+        <span class="ba-icon">4</span>
+        <div class="ba-text"><strong>シフト生成ボタンを押す</strong><br>OR-Toolsは動く。ここは既に自動化済み</div>
+      </div>
+      <div class="ba-step">
+        <span class="ba-icon">5</span>
+        <div class="ba-text"><strong>結果を確認して手動で調整</strong><br>問題があれば手で直す</div>
+      </div>
+      <div class="ba-step">
+        <span class="ba-icon">6</span>
+        <div class="ba-text"><strong>確定後にSlackで「シフト出たよ」と投稿</strong><br>手動で全員に告知</div>
+      </div>
+      <div class="ba-step">
+        <span class="ba-icon">7</span>
+        <div class="ba-text"><strong>欠員が出たら自分で探す</strong><br>「誰か入れない？」とDM送りまくる</div>
+      </div>
+    </div>
+
+    <div class="ba-arrow">→</div>
+
+    <div class="ba-card after">
+      <span class="ba-label">After（エージェント化後）</span>
+      <div class="ba-step">
+        <span class="ba-icon">1</span>
+        <div class="ba-text"><strong>エージェントが自動で全員にSlack DM</strong><br>毎月1日に「来月の希望出してね」と送信。店長は何もしない</div>
+      </div>
+      <div class="ba-step">
+        <span class="ba-icon">2</span>
+        <div class="ba-text"><strong>エージェントが毎日未提出者に催促</strong><br>自動で「まだ出てないよ」とDM。店長は何もしない</div>
+      </div>
+      <div class="ba-step">
+        <span class="ba-icon">3</span>
+        <div class="ba-text"><strong>希望はSlack上で完結</strong><br>スタッフがSlackで返答→自動でNotionに記録</div>
+      </div>
+      <div class="ba-step">
+        <span class="ba-icon">4</span>
+        <div class="ba-text"><strong>締切到来→自動で最適化実行</strong><br>OR-Toolsが自動起動。店長は何もしない</div>
+      </div>
+      <div class="ba-step">
+        <span class="ba-icon">5</span>
+        <div class="ba-text"><strong>「シフト案できました」とSlackに通知</strong><br><span class="hl">店長はNotionで確認→承認ボタンを押すだけ</span></div>
+      </div>
+      <div class="ba-step">
+        <span class="ba-icon">6</span>
+        <div class="ba-text"><strong>承認したら自動で全員に通知</strong><br>確定シフトが全員にSlack DM。店長は何もしない</div>
+      </div>
+      <div class="ba-step">
+        <span class="ba-icon">7</span>
+        <div class="ba-text"><strong>欠員→候補リストが自動で出る</strong><br>スコア付き候補を提示。<span class="hl">店長は選ぶだけ</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-info" style="margin-top: 16px;">
+    <div class="callout-title">要するに</div>
+    <div class="callout-text">
+      店長の仕事が<strong>「全部やる」から「確認して承認する」</strong>に変わる。<br>
+      小笠原さんが言っていた<strong>「シフトが組めるエージェント」</strong>とは、まさにこの状態。<br>
+      「便利機能」と「エージェント」の違い = <strong>人間がトリガーするか、AIが自律的に回すか</strong>。
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec" id="s3">
+  <h2><span class="sec-num">3</span>月次サイクル — ストーリーで理解する</h2>
+  <div class="sec-sub">「来月3月のシフトを作る」場合のエージェントの動きを時系列で</div>
+
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-dot">1</div>
+      <div class="tl-card">
+        <span class="tl-when">2月1日 0:00</span>
+        <div class="tl-title">希望収集開始</div>
+        <div class="tl-desc">
+          Inngestの月次Cronが自動起動。Notionの状態を<code>COLLECTING</code>に更新。<br>
+          全スタッフにSlack DMで「3月のシフト希望を出してください」と送信。<br>
+          Notionの希望入力フォーム（カレンダービュー）のリンクも添付。
+        </div>
+        <span class="tl-who who-agent">エージェントが自動実行</span>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot">2</div>
+      <div class="tl-card">
+        <span class="tl-when">2月2日〜7日（毎日）</span>
+        <div class="tl-title">催促リマインド</div>
+        <div class="tl-desc">
+          毎日、Notionで希望未提出のスタッフを自動チェック。<br>
+          未提出者にSlack DMで「まだ希望が出てないよ」と催促。<br>
+          提出済みの人には送らない。全員提出したら催促を自動停止。
+        </div>
+        <span class="tl-who who-agent">エージェントが自動実行</span>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot">3</div>
+      <div class="tl-card">
+        <span class="tl-when">2月8日（締切日）</span>
+        <div class="tl-title">シフト最適化実行</div>
+        <div class="tl-desc">
+          締切到来。Notionの状態を<code>GENERATING</code>に更新。<br>
+          Cloud Run上のOR-Toolsに<code>POST /schedule</code>を送信。<br>
+          スタッフの希望・スキル・法的制約・必要人数を全部考慮して最適シフトを算出。<br>
+          結果をNotionのシフト表に書き込む。
+        </div>
+        <span class="tl-who who-engine">最適化エンジンが計算</span>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot">4</div>
+      <div class="tl-card">
+        <span class="tl-when">2月8日（生成直後）</span>
+        <div class="tl-title">店長にレビュー依頼</div>
+        <div class="tl-desc">
+          Notionの状態を<code>REVIEW</code>に更新。<br>
+          店長（牛ノ浜さん）にSlackで「ドラフトシフトができました。確認してください」と通知。<br>
+          Notionのシフト表リンク付き。<br>
+          <strong>ここからは店長のアクション待ち。エージェントは最大7日間待機。</strong>
+        </div>
+        <span class="tl-who who-agent">エージェントが通知</span>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot">5</div>
+      <div class="tl-card">
+        <span class="tl-when">2月8日〜15日のどこか</span>
+        <div class="tl-title">店長が確認・承認</div>
+        <div class="tl-desc">
+          店長がNotionでシフト表を確認。<br>
+          問題なければNotionの承認ボタンを押す（またはSlackで承認コマンド）。<br>
+          修正が必要なら手動で調整してから承認。<br>
+          <strong>店長がやるのはこの「見て、OKを出す」だけ。</strong>
+        </div>
+        <span class="tl-who who-human">店長が操作</span>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot">6</div>
+      <div class="tl-card">
+        <span class="tl-when">承認直後</span>
+        <div class="tl-title">確定・全員通知</div>
+        <div class="tl-desc">
+          承認イベントを受けてエージェントが再開。<br>
+          Notionの状態を<code>CONFIRMED</code>に更新。<br>
+          Cloud Runに<code>POST /finalize</code>を送信（確定処理）。<br>
+          全スタッフにSlack DMで確定シフトを個別通知。<br>
+          「あなたの3月シフト: 3/1(土) 18:00-24:00、3/5(水) 20:00-27:00...」
+        </div>
+        <span class="tl-who who-agent">エージェントが自動実行</span>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot">!</div>
+      <div class="tl-card" style="border-color: var(--red-dim);">
+        <span class="tl-when">運用中いつでも</span>
+        <div class="tl-title">欠員対応（イレギュラー）</div>
+        <div class="tl-desc">
+          スタッフが「3/5出られなくなった」と連絡。<br>
+          エージェントが代替候補をスコア付きでリスト化:<br>
+          <code>田中(スコア85) &gt; 鈴木(72) &gt; 佐藤(68)</code><br>
+          スコア = 空き(40%) + スキル(25%) + 公平性(20%) + 近さ(10%) + 受諾率(5%)<br>
+          <strong>店長が候補を選ぶ→エージェントがその人にSlack DMで打診。</strong>
+        </div>
+        <span class="tl-who who-human">店長が選択</span>
+        <span class="tl-who who-agent" style="margin-left: 4px;">エージェントが打診</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec" id="s4">
+  <h2><span class="sec-num">4</span>技術構成 — 5つのパーツ</h2>
+  <div class="sec-sub">全体像。矢印の向きが「誰が誰を呼ぶか」</div>
+
+  <div class="arch-box">
+    <div class="arch-label">Vercel（既存のawbacfプロジェクト内に全部入る）</div>
+
+    <div class="arch-row">
+      <div class="arch-node inngest">
+        <div class="arch-node-title">Inngest</div>
+        <div class="arch-node-sub">ワークフロー管理</div>
+        <div class="arch-node-items">
+          月次Cronで自動起動<br>
+          催促ループ制御<br>
+          承認待ち（最大7日）<br>
+          失敗時に自動リトライ
+        </div>
+      </div>
+      <div class="arch-node slack">
+        <div class="arch-node-title">Slack Bot</div>
+        <div class="arch-node-sub">Bolt.js（既存）</div>
+        <div class="arch-node-items">
+          DM送信（希望収集）<br>
+          DM送信（催促）<br>
+          承認コマンド<br>
+          欠員打診
+        </div>
+      </div>
+      <div class="arch-node adapter">
+        <div class="arch-node-title">Adapter Layer</div>
+        <div class="arch-node-sub">通知の抽象化</div>
+        <div class="arch-node-items">
+          今: SlackAdapter<br>
+          将来: LINEAdapter<br>
+          本体を変えずに<br>
+          通知先を切り替え可能
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-arrow">↕ HTTPS API呼び出し</div>
+
+    <div class="arch-row">
+      <div class="arch-node notion">
+        <div class="arch-node-title">Notion</div>
+        <div class="arch-node-sub">管理画面 + 7 DB</div>
+        <div class="arch-node-items">
+          設定値の保管庫<br>
+          シフト状態の表示<br>
+          店長の操作画面<br>
+          承認トリガー
+        </div>
+      </div>
+      <div class="arch-node cloudrun">
+        <div class="arch-node-title">Cloud Run</div>
+        <div class="arch-node-sub">scheduling（既存）</div>
+        <div class="arch-node-items">
+          OR-Toolsで最適化計算<br>
+          POST /schedule<br>
+          POST /finalize<br>
+          Python + FastAPI
+        </div>
+      </div>
+      <div class="arch-node agent">
+        <div class="arch-node-title">Notion Agent</div>
+        <div class="arch-node-sub">限定利用</div>
+        <div class="arch-node-items">
+          DB横断検索<br>
+          シフト要約・分析<br>
+          例外検知<br>
+          ※自動実行には使わない
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec" id="s5">
+  <h2><span class="sec-num">5</span>各パーツをアナロジーで理解する</h2>
+  <div class="sec-sub">技術がわからなくても、それぞれが何をしてるかイメージできるように</div>
+
+  <div class="analogy">
+    <div class="analogy-card">
+      <div class="analogy-tech" style="color: var(--gold);">Inngest</div>
+      <div class="analogy-name">「自動運転のプロマネ」</div>
+      <div class="analogy-like">
+        プロジェクトマネージャーがタスクリストを上から順に消化してくれるイメージ。<br>
+        「3日待って」「結果来たら次やって」「失敗したらもう1回」を全部自動でやる。
+      </div>
+      <div class="analogy-detail">
+        毎月1日に自動起動して、希望収集→催促→生成→レビュー依頼→承認待ち→通知、を全部順番に実行する。途中で1ステップ失敗しても、そこだけ自動リトライしてくれる。承認待ち中はリソースを消費せずに寝ている（コスト$0）。
+      </div>
+    </div>
+
+    <div class="analogy-card">
+      <div class="analogy-tech" style="color: var(--green);">Notion 7DB</div>
+      <div class="analogy-name">「設定画面 + ダッシュボード」</div>
+      <div class="analogy-like">
+        エージェントの「脳の設定ファイル」がNotionに入っている。<br>
+        店長はNotionを見れば今何が起きてるかわかるし、設定を変えればエージェントの動きが変わる。
+      </div>
+      <div class="analogy-detail">
+        7つのDBに分かれている: 全体設定/店舗/スタッフ/シフトパターン/必要人数/通知ルール/特別日。プログラマーじゃない店長でもNotionの画面から「金曜の最低人数を3人に増やす」みたいな変更ができる。プログラムを書き直す必要がない。
+      </div>
+    </div>
+
+    <div class="analogy-card">
+      <div class="analogy-tech" style="color: var(--purple);">Cloud Run + OR-Tools</div>
+      <div class="analogy-name">「計算エンジン」</div>
+      <div class="analogy-like">
+        パズルを解く天才。「この人は火曜NG」「金曜は3人必要」「ベテラン1人以上」みたいな条件を全部満たす最適解を数秒で出す。
+      </div>
+      <div class="analogy-detail">
+        これは既に動いている。牛ノ浜さんが毎月使っているシフト生成機能そのもの。今は手動でボタンを押しているが、エージェント化後はInngestが自動で叩く。中身のPythonコードは変えない。
+      </div>
+    </div>
+
+    <div class="analogy-card">
+      <div class="analogy-tech" style="color: var(--blue);">Slack Bot (Bolt.js)</div>
+      <div class="analogy-name">「スタッフとの窓口」</div>
+      <div class="analogy-like">
+        エージェントの「口」。スタッフに話しかけるのも、スタッフからの返事を聞くのも、全部Slackを通じて行う。
+      </div>
+      <div class="analogy-detail">
+        既存のSlack Botを拡張する。今はチャットボット機能（さくらのAI）だけだが、DM送信（希望収集・催促・結果通知）と承認コマンドを追加する。DM送信の追加は2-4時間の作業量。
+      </div>
+    </div>
+
+    <div class="analogy-card">
+      <div class="analogy-tech" style="color: var(--cyan);">Adapter Pattern</div>
+      <div class="analogy-name">「変換プラグ」</div>
+      <div class="analogy-like">
+        海外旅行の電源アダプターと同じ。プラグ（Slack→LINE）を変えるだけで、本体（エージェントのロジック）は一切変えなくていい。
+      </div>
+      <div class="analogy-detail">
+        今はSlackだけど、将来LINEに変えたくなったら「LINEAdapter」を1つ作るだけ。エージェント本体のコードは1行も変えない。これが「抽象化」の価値。実装時は全ての通知をAdapter経由にすること。
+      </div>
+    </div>
+
+    <div class="analogy-card">
+      <div class="analogy-tech" style="color: var(--orange);">Notion Custom Agent</div>
+      <div class="analogy-name">「AIアシスタント（限定版）」</div>
+      <div class="analogy-like">
+        LLMの力で「先月のシフト傾向を分析して」みたいな質問に答えてくれる。ただし<strong>自動実行ではなく、聞かれた時だけ答える係</strong>。
+      </div>
+      <div class="analogy-detail">
+        LLMは催促送信みたいな確定的な処理には使わない（コストの無駄＋確率的に失敗するリスク）。「複数DBをまたいで情報を探す」「シフトの偏りを検知する」みたいな、LLMが得意な仕事だけ任せる。5/4まで無料。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec" id="s6">
+  <h2><span class="sec-num">6</span>Notionに作る7つのデータベース</h2>
+  <div class="sec-sub">エージェントの「脳」。店長がNotionから設定を変えられる</div>
+
+  <div class="db-grid">
+    <div class="db-card">
+      <span class="db-num">DB1</span>
+      <div class="db-name">全体設定</div>
+      <div class="db-desc">締切日(毎月X日)、催促間隔(毎日/2日おき)、承認待ち最大日数、通知テンプレートなど</div>
+      <div class="db-rows">1行（Key-Value形式）</div>
+    </div>
+    <div class="db-card">
+      <span class="db-num">DB2</span>
+      <div class="db-name">店舗マスタ</div>
+      <div class="db-desc">東京/福岡の営業時間、定休日、タイムゾーン、閉店作業時間</div>
+      <div class="db-rows">2行（東京・福岡）</div>
+    </div>
+    <div class="db-card">
+      <span class="db-num">DB3</span>
+      <div class="db-name">スタッフマスタ</div>
+      <div class="db-desc">名前、スキル、時給、勤務可能曜日、連勤上限、18歳未満フラグ、SlackID</div>
+      <div class="db-rows">10-20行（全スタッフ）</div>
+    </div>
+    <div class="db-card">
+      <span class="db-num">DB4</span>
+      <div class="db-name">シフトパターン</div>
+      <div class="db-desc">「通し」「前半」「後半」など定義済みの勤務パターン。開始・終了時刻付き</div>
+      <div class="db-rows">3-5行</div>
+    </div>
+    <div class="db-card">
+      <span class="db-num">DB5</span>
+      <div class="db-name">時間帯別必要人数</div>
+      <div class="db-desc">曜日×時間帯の最低・最大配置人数。ベテラン最低1名などのスキル条件も</div>
+      <div class="db-rows">曜日×時間帯</div>
+    </div>
+    <div class="db-card">
+      <span class="db-num">DB6</span>
+      <div class="db-name">通知ルール</div>
+      <div class="db-desc">希望収集開始/催促/レビュー依頼/確定通知、それぞれのメッセージテンプレートと送信先</div>
+      <div class="db-rows">4-6行（通知種別ごと）</div>
+    </div>
+    <div class="db-card">
+      <span class="db-num">DB7</span>
+      <div class="db-name">特別日設定</div>
+      <div class="db-desc">1日店長イベント、年末年始、GW、お盆。特別な人数・スキル要件を上書き</div>
+      <div class="db-rows">必要に応じて追加</div>
+    </div>
+  </div>
+
+  <div class="callout callout-info" style="margin-top: 16px;">
+    <div class="callout-title">なぜ7つに分けるのか</div>
+    <div class="callout-text">
+      1つの巨大DBに全部入れると「スタッフの時給を見たいだけなのに店舗設定も通知テンプレートも全部出てくる」となって使いにくい。<br>
+      7つに分けることで、<strong>「人のことはDB3」「店のことはDB2」「特別日はDB7」</strong>と直感的に管理できる。<br>
+      プロパティ名と型まで設計済み（<code>docs/deep-research-results/R2-gemini.md</code>を参照）。
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec" id="s7">
+  <h2><span class="sec-num">7</span>実装スコープ — 何を書くか</h2>
+  <div class="sec-sub">新しく作るファイルと、既存で修正するファイル</div>
+
+  <table class="scope-table">
+    <thead>
+      <tr><th>ファイル</th><th>種別</th><th>概要</th><th>工数目安</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>src/inngest/client.ts</code></td>
+        <td><span class="scope-new">新規</span></td>
+        <td>Inngestクライアント初期化。<code>npm install inngest</code> して設定するだけ</td>
+        <td>0.5h</td>
+      </tr>
+      <tr>
+        <td><code>src/inngest/monthly-cycle.ts</code></td>
+        <td><span class="scope-new">新規</span></td>
+        <td><strong>中核ファイル。</strong>月次サイクル全体のワークフロー定義。step.run/step.sleep/step.waitForEventの組み合わせ</td>
+        <td>4-8h</td>
+      </tr>
+      <tr>
+        <td><code>src/adapters/notification.ts</code></td>
+        <td><span class="scope-new">新規</span></td>
+        <td>NotificationSender interface + SlackAdapter実装。DM送信・チャンネル投稿の抽象化</td>
+        <td>2-3h</td>
+      </tr>
+      <tr>
+        <td><code>src/inngest/irregular.ts</code></td>
+        <td><span class="scope-new">新規</span></td>
+        <td>欠員対応ワークフロー。候補スコア算出 + 店長への提示</td>
+        <td>3-4h</td>
+      </tr>
+      <tr>
+        <td><code>src/slack/dm.ts</code></td>
+        <td><span class="scope-mod">修正</span></td>
+        <td>既存のSlack Botに DM送信メソッドを追加。<code>chat.postMessage</code>を使うだけ</td>
+        <td>2-4h</td>
+      </tr>
+      <tr>
+        <td><code>src/api/inngest.ts</code></td>
+        <td><span class="scope-new">新規</span></td>
+        <td>Inngestのサーブエンドポイント（<code>/api/inngest</code>）。Vercel Functions用</td>
+        <td>0.5h</td>
+      </tr>
+      <tr>
+        <td><code>Notion 7DB</code></td>
+        <td><span class="scope-new">新規</span></td>
+        <td>7つのデータベースをNotionに手動 or API で作成</td>
+        <td>3-4h</td>
+      </tr>
+      <tr>
+        <td><code>src/notion/settings.ts</code></td>
+        <td><span class="scope-mod">修正</span></td>
+        <td>既存のNotion連携に7DB読み取り関数を追加</td>
+        <td>2-3h</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info" style="margin-top: 16px;">
+    <div class="callout-title">合計工数の目安</div>
+    <div class="callout-text">
+      新規コード: <strong>約15-25時間</strong>（2-3営業日）<br>
+      テスト・デバッグ: <strong>約10-15時間</strong>（1-2営業日）<br>
+      Notion DB構築 + 初期データ投入: <strong>約3-4時間</strong>（半日）<br>
+      <strong>合計: 1週間〜1.5週間</strong>（3/10の大竹さん報告に間に合うスケジュール）
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec" id="s8">
+  <h2><span class="sec-num">8</span>設計判断FAQ</h2>
+  <div class="sec-sub">主要な設計判断とその根拠</div>
+
+  <div class="cheat">
+    <div class="cheat-q">なぜInngestを選んだのか？</div>
+    <div class="cheat-a">
+      ClaudeとGemini、2つの独立したDeepResearchが両方とも「Inngest一択」と結論。Vercel Cronだとリトライも状態管理も全部自前実装が必要で技術的負債化する。Temporalは月$100〜でオーバースペック。Inngestは$0、Vercel Marketplaceからワンクリック導入、月10万実行無料。<br>
+      詳細: <code>docs/deep-research-results/R3-gemini.md</code> Section A
+    </div>
+  </div>
+
+  <div class="cheat">
+    <div class="cheat-q">Notionカスタムエージェントの利用範囲は？</div>
+    <div class="cheat-a">
+      <strong>限定利用。</strong>DB横断検索・要約・例外検知のみ。催促送信等の確定的処理にはLLMを使わない。<br>
+      理由: 催促は毎回同じ処理。LLMを挟むのはコストの無駄 + 確率的に失敗するリスク。LLMは「先月のシフト傾向を分析して」のような質問応答にだけ使う。5/4まで無料、その後 月$5-10程度。
+    </div>
+  </div>
+
+  <div class="cheat">
+    <div class="cheat-q">なぜAdapter Pattern？</div>
+    <div class="cheat-a">
+      現時点はSlackだが、将来LINE対応の可能性がある。<code>NotificationSender</code>インターフェースを挟むことで、LINEAdapter追加時にワークフロー本体のコードを変更不要にする。Claude R3・Gemini R3ともに推奨。
+    </div>
+  </div>
+
+  <div class="cheat">
+    <div class="cheat-q">Notionのデータベース設計は？</div>
+    <div class="cheat-a">
+      7つのDBを作成。プロパティ名・型・デフォルト値まで設計済み。<br>
+      設計書: <code>docs/deep-research-results/R2-gemini.md</code> Part 2をそのまま参照。
+    </div>
+  </div>
+
+  <div class="cheat">
+    <div class="cheat-q">schedulingリポジトリ（Python側）の変更は？</div>
+    <div class="cheat-a">
+      <strong>変更なし。</strong>Cloud Run上のOR-ToolsはHTTPS経由でそのまま呼び出す。<code>POST /schedule</code>(非同期/202)と<code>POST /finalize</code>は既に稼働中。今回の実装範囲はawbacf（TypeScript）側のみ。
+    </div>
+  </div>
+
+  <div class="cheat">
+    <div class="cheat-q">欠員対応のスコープは？</div>
+    <div class="cheat-a">
+      <strong>MVPは「候補提案 + 店長選択 + 打診」まで。</strong><br>
+      候補者をスコア付きでリスト化（空き40% + スキル25% + 公平性20% + 近接10% + 受諾率5%）→ 店長が選択 → エージェントがSlack DMで打診。<br>
+      全自動エスカレーション（タイムアウト→ブロードキャスト等）は後続フェーズ（4-6週間追加）。
+    </div>
+  </div>
+
+  <div class="cheat">
+    <div class="cheat-q">追加費用は？</div>
+    <div class="cheat-a">
+      <strong>追加の月額費用ゼロ。</strong><br>
+      Inngest: 月10万実行まで無料（2店舗には桁違いに余裕）<br>
+      Notion: 既存プラン内 / Cloud Run: 変更なし / Vercel: 変更なし<br>
+      Notionカスタムエージェント: 5/4まで無料、以降 月$5-10
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec" id="s9">
+  <h2><span class="sec-num">9</span>リスクと注意点</h2>
+  <div class="sec-sub">PMとして把握しておくべきこと</div>
+
+  <div class="callout callout-info">
+    <div class="callout-title">D6: Slack DMで確定</div>
+    <div class="callout-text">
+      awabarスタッフは既にSlackを利用中のため、希望収集はSlack DMで実施。Adapter Patternにより、将来LINE対応が必要になった場合もLINEAdapter追加のみで切り替え可能。
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-title">Notion APIレート制限</div>
+    <div class="callout-text">
+      3リクエスト/秒の制限がある。月次サイクルの処理中に大量のDB読み書きが集中すると詰まる可能性。対策として、一括読み取り→メモリ内処理→一括書き込みのパターンにする。Inngestのステップ間に自然なディレイがあるので実際には問題になりにくい。
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-title">排他制御がない</div>
+    <div class="callout-text">
+      Notion Select + Inngest方式では、万が一ワークフローが二重起動しても排他ロックがない。ただし月1回のCron実行で二重起動するリスクは極めて低い。問題が起きたら後からVercel KVを追加できる（設計はClaude R3に記載済み）。
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <div class="callout-title">ハレーション対策は組み込み済み</div>
+    <div class="callout-text">
+      DeepResearch R2で15項目のハレーション（AIの誤動作リスク）を洗い出し済み。最重要5件:<br>
+      1. 18歳未満の深夜勤務配置 → OR-Toolsの制約条件で自動ブロック<br>
+      2. 勤務間インターバル11h未満 → 同上<br>
+      3. 連勤7日以上 → 同上<br>
+      4. シフトの偏り → 公平性スコアで検知<br>
+      5. 法定休憩未付与 → OR-Toolsの制約条件で自動付与<br>
+      <strong>全てOR-Toolsの制約条件レベルで対策済み。LLMの判断に頼らない。</strong>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+</body>
+</html>
