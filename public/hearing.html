@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<style id="auth-gate-style">
+body>*:not(#auth-gate){display:none!important}
+#auth-gate{display:flex!important;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:99999;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#auth-gate .box{max-width:340px;width:100%;padding:2rem;text-align:center}
+#auth-gate h1{font-size:1.1rem;color:#fff;margin-bottom:1.5rem;font-weight:500}
+#auth-gate input{width:100%;padding:.65rem 1rem;background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:1rem;outline:none;margin-bottom:.6rem}
+#auth-gate input:focus{border-color:#666}
+#auth-gate button{width:100%;padding:.65rem;background:#fff;color:#000;border:none;border-radius:6px;font-size:.9rem;font-weight:600;cursor:pointer}
+#auth-gate button:hover{background:#ddd}
+#auth-gate .err{color:#f44;font-size:.8rem;margin-top:.5rem;visibility:hidden}
+#auth-gate .err.show{visibility:visible}
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>牛ノ浜さんヒアリング — 2026/02/28</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --bg2: #ffffff;
+    --bg3: #f5f5f4;
+    --tx: #1c1917;
+    --tx2: #57534e;
+    --tx3: #a8a29e;
+    --accent: #b45309;
+    --accent-bg: #fffbeb;
+    --accent-border: #fde68a;
+    --green: #059669;
+    --green-bg: #ecfdf5;
+    --green-border: #a7f3d0;
+    --blue: #2563eb;
+    --blue-bg: #eff6ff;
+    --blue-border: #bfdbfe;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --red-border: #fecaca;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+    --purple-border: #ddd6fe;
+    --border: #e7e5e4;
+    --r: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--tx);
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 800px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 48px 24px 36px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .header-tag {
+    display: inline-block;
+    font-size: 0.72rem; font-weight: 700;
+    color: var(--accent); background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    padding: 2px 10px; border-radius: 4px;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+  }
+  .header h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+  .header-sub { font-size: 0.9rem; color: var(--tx2); }
+  .header-date { font-size: 0.82rem; color: var(--tx3); margin-top: 4px; }
+
+  /* Section */
+  .sec { margin-bottom: 48px; }
+  .sec-label {
+    font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em;
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .sec h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 4px; }
+  .sec-desc { font-size: 0.85rem; color: var(--tx2); margin-bottom: 16px; }
+
+  /* Flow */
+  .flow { counter-reset: flow; }
+  .flow-item {
+    counter-increment: flow;
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .flow-item:last-child { border-bottom: none; }
+  .flow-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.78rem; font-weight: 800; flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .flow-num.manual { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .flow-num.auto { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .flow-num.new { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
+  .flow-content { flex: 1; }
+  .flow-title { font-weight: 700; font-size: 0.92rem; }
+  .flow-desc { font-size: 0.85rem; color: var(--tx2); }
+  .flow-tag {
+    display: inline-block; font-size: 0.68rem; font-weight: 700;
+    padding: 1px 6px; border-radius: 3px; margin-top: 4px;
+  }
+  .tag-manual { background: var(--red-bg); color: var(--red); }
+  .tag-auto { background: var(--green-bg); color: var(--green); }
+  .tag-new { background: var(--blue-bg); color: var(--blue); }
+
+  /* Before/After compare */
+  .compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  .compare-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 18px 20px;
+  }
+  .compare-card h3 {
+    font-size: 0.85rem; font-weight: 700; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .compare-card ul { list-style: none; padding: 0; }
+  .compare-card li {
+    font-size: 0.85rem; color: var(--tx2); padding: 4px 0 4px 18px;
+    position: relative; line-height: 1.6;
+  }
+  .compare-card.now { border-top: 3px solid var(--red); }
+  .compare-card.future { border-top: 3px solid var(--green); }
+  .compare-card.now li::before {
+    content: ''; position: absolute; left: 0; top: 11px;
+    width: 8px; height: 8px; border-radius: 50%; background: var(--red-border);
+  }
+  .compare-card.future li::before {
+    content: ''; position: absolute; left: 0; top: 11px;
+    width: 8px; height: 8px; border-radius: 50%; background: var(--green-border);
+  }
+
+  /* Question cards */
+  .q-grid { display: flex; flex-direction: column; gap: 12px; }
+  .q-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 16px 20px;
+    border-left: 3px solid var(--accent);
+  }
+  .q-card.insight { border-left-color: var(--purple); }
+  .q-card.pain { border-left-color: var(--red); }
+  .q-card.opp { border-left-color: var(--green); }
+  .q-card.confirm { border-left-color: var(--blue); }
+  .q-num {
+    font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em;
+    padding: 1px 6px; border-radius: 3px; display: inline-block;
+    margin-bottom: 6px;
+  }
+  .q-card .q-num { background: var(--accent-bg); color: var(--accent); }
+  .q-card.insight .q-num { background: var(--purple-bg); color: var(--purple); }
+  .q-card.pain .q-num { background: var(--red-bg); color: var(--red); }
+  .q-card.opp .q-num { background: var(--green-bg); color: var(--green); }
+  .q-card.confirm .q-num { background: var(--blue-bg); color: var(--blue); }
+  .q-main { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+  .q-why { font-size: 0.82rem; color: var(--tx2); line-height: 1.6; }
+  .q-maps {
+    margin-top: 6px; font-size: 0.72rem; color: var(--tx3);
+  }
+  .q-maps code {
+    background: var(--bg3); padding: 1px 4px; border-radius: 2px;
+    font-size: 0.7rem;
+  }
+
+  /* Callout */
+  .callout {
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--r);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+  .callout-title { font-weight: 700; font-size: 0.88rem; color: var(--accent); margin-bottom: 4px; }
+  .callout-text { font-size: 0.85rem; color: var(--tx2); line-height: 1.7; }
+
+  .promise-box {
+    background: var(--green-bg);
+    border: 1px solid var(--green-border);
+    border-radius: var(--r);
+    padding: 20px 24px;
+    text-align: center;
+  }
+  .promise-box p { font-size: 0.95rem; color: var(--green); font-weight: 600; line-height: 1.7; }
+
+  /* Meta section */
+  .meta {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 16px 20px;
+    font-size: 0.82rem;
+    color: var(--tx2);
+    line-height: 1.7;
+  }
+  .meta h4 { font-size: 0.78rem; font-weight: 700; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .meta ul { list-style: none; padding: 0; }
+  .meta li { padding: 2px 0; }
+  .meta code { background: var(--bg2); padding: 1px 4px; border-radius: 2px; font-size: 0.78rem; }
+
+  @media (max-width: 600px) {
+    .compare { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="auth-gate">
+<div class="box">
+<h1>パスワードを入力してください</h1>
+<form id="auth-form">
+<input type="password" id="auth-pw" placeholder="パスワード" autofocus required>
+<button type="submit">入る</button>
+</form>
+<p class="err" id="auth-err">パスワードが違います</p>
+</div>
+</div>
+<script>
+(function(){
+var K="awabar-docs-auth";
+if(sessionStorage.getItem(K)==="ok"){
+document.getElementById("auth-gate").remove();
+document.getElementById("auth-gate-style").remove();
+return;
+}
+document.getElementById("auth-form").addEventListener("submit",function(e){
+e.preventDefault();
+if(document.getElementById("auth-pw").value==="nikarasu"){
+sessionStorage.setItem(K,"ok");
+document.getElementById("auth-gate").remove();
+document.getElementById("auth-gate-style").remove();
+}else{
+document.getElementById("auth-err").classList.add("show");
+document.getElementById("auth-pw").value="";
+document.getElementById("auth-pw").focus();
+}
+});
+})();
+</script>
+
+<div class="header">
+  <span class="header-tag">Hearing Document</span>
+  <h1>シフトエージェント化 ヒアリング</h1>
+  <div class="header-sub">牛ノ浜さん（福岡店店長）× 小竹</div>
+  <div class="header-date">2026年2月28日（金）18:00</div>
+</div>
+
+<div class="wrap">
+
+<!-- ========================================== -->
+<div class="sec">
+  <div class="sec-label" style="color: var(--accent);">はじめに</div>
+  <h2>今日お聞きしたいこと</h2>
+  <div class="sec-desc">
+    シフト機能を「便利ツール」から「自分で動くエージェント」に進化させます。<br>
+    現場で毎月使ってくださっている牛ノ浜さんの声が、最終的な仕様に直接反映されます。<br>
+    「ここが面倒」「こうなったら助かる」「実はこういう運用してる」—— なんでも教えてください。
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">ヒアリングの流れ（30-40分）</div>
+    <div class="callout-text">
+      1. 今の機能を一緒に振り返る（5分）<br>
+      2. これから作るものを説明する（10分）<br>
+      3. GAPについて質問させてもらう（15-20分）<br>
+      4. 牛ノ浜さんから「他にこういうことも」があれば（5分）
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<div class="sec">
+  <div class="sec-label" style="color: var(--red);">Part 1</div>
+  <h2>今の機能（一緒に確認）</h2>
+  <div class="sec-desc">毎月のシフト作成で、牛ノ浜さんがやっていること</div>
+
+  <div class="flow">
+    <div class="flow-item">
+      <div class="flow-num manual">1</div>
+      <div class="flow-content">
+        <div class="flow-title">スタッフに希望提出を依頼</div>
+        <div class="flow-desc">「来月の希望出してね」と声かけ。Slack？口頭？他の方法？</div>
+        <span class="flow-tag tag-manual">手動</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num manual">2</div>
+      <div class="flow-content">
+        <div class="flow-title">スタッフがNotionに希望を入力</div>
+        <div class="flow-desc">出勤可能時間帯DBにスタッフ自身が入力</div>
+        <span class="flow-tag tag-manual">手動</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num manual">3</div>
+      <div class="flow-content">
+        <div class="flow-title">提出状況を確認 → 催促</div>
+        <div class="flow-desc">誰が出してないか自分で確認して、個別に連絡</div>
+        <span class="flow-tag tag-manual">手動</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num manual">4</div>
+      <div class="flow-content">
+        <div class="flow-title">シフト生成を実行</div>
+        <div class="flow-desc">Notionのボタンを押してOR-Toolsで最適化</div>
+        <span class="flow-tag tag-manual">手動（ボタン押す）</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num auto">5</div>
+      <div class="flow-content">
+        <div class="flow-title">OR-Toolsがシフト案を生成</div>
+        <div class="flow-desc">希望・スキル・制約を考慮して最適シフトを算出 → Notionに書き込み</div>
+        <span class="flow-tag tag-auto">自動</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num manual">6</div>
+      <div class="flow-content">
+        <div class="flow-title">シフト案を確認・調整</div>
+        <div class="flow-desc">Notionでドラフトを見て、必要があれば手動で修正</div>
+        <span class="flow-tag tag-manual">手動</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num manual">7</div>
+      <div class="flow-content">
+        <div class="flow-title">確定 → スタッフに通知</div>
+        <div class="flow-desc">確定ボタン → Slackに通知が飛ぶ</div>
+        <span class="flow-tag tag-auto">一部自動</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num manual">8</div>
+      <div class="flow-content">
+        <div class="flow-title">欠員が出たら代わりを探す</div>
+        <div class="flow-desc">誰に頼むか考えて、個別に連絡</div>
+        <span class="flow-tag tag-manual">手動</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 16px; padding: 12px 16px; background: var(--red-bg); border-radius: var(--r); font-size: 0.85rem; color: var(--red); border: 1px solid var(--red-border);">
+    現在: 8ステップ中6つが手動 → <strong>自動化率 25%</strong>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<div class="sec">
+  <div class="sec-label" style="color: var(--green);">Part 2</div>
+  <h2>これから作るもの（エージェント化後）</h2>
+  <div class="sec-desc">牛ノ浜さんがやることは「確認して承認する」だけになります</div>
+
+  <div class="flow">
+    <div class="flow-item">
+      <div class="flow-num new">1</div>
+      <div class="flow-content">
+        <div class="flow-title">エージェントが全スタッフにSlack DMで希望提出を依頼</div>
+        <div class="flow-desc">毎月自動で送信。牛ノ浜さんは何もしなくてOK</div>
+        <span class="flow-tag tag-new">自動化</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num new">2</div>
+      <div class="flow-content">
+        <div class="flow-title">スタッフがSlack上で希望を返信 → Notionに自動記録</div>
+        <div class="flow-desc">Slackで返すだけ。Notionを直接触る必要なし</div>
+        <span class="flow-tag tag-new">自動化</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num new">3</div>
+      <div class="flow-content">
+        <div class="flow-title">エージェントが未提出者に毎日催促</div>
+        <div class="flow-desc">誰が出してないか自動チェック → 個別にSlack DM。全員出したら催促停止</div>
+        <span class="flow-tag tag-new">自動化</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num new">4</div>
+      <div class="flow-content">
+        <div class="flow-title">締切 → 自動でシフト生成</div>
+        <div class="flow-desc">ボタンを押す必要なし。締切日に自動実行</div>
+        <span class="flow-tag tag-new">自動化</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num auto">5</div>
+      <div class="flow-content">
+        <div class="flow-title">OR-Toolsがシフト案を生成（今と同じ）</div>
+        <div class="flow-desc">中身は変わらない。今まで通りの品質</div>
+        <span class="flow-tag tag-auto">自動（既存）</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num manual">6</div>
+      <div class="flow-content">
+        <div class="flow-title">牛ノ浜さんが確認 → 承認</div>
+        <div class="flow-desc">Slackに「シフト案できました」と通知が来る。Notionで確認して承認ボタンを押すだけ</div>
+        <span class="flow-tag tag-manual">唯一の手動ステップ</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num new">7</div>
+      <div class="flow-content">
+        <div class="flow-title">全スタッフに確定シフトを個別通知</div>
+        <div class="flow-desc">「あなたの来月シフト: 3/1(土) 18-24時、3/5(水) 20-27時...」とSlack DMで送信</div>
+        <span class="flow-tag tag-new">自動化</span>
+      </div>
+    </div>
+    <div class="flow-item">
+      <div class="flow-num new">8</div>
+      <div class="flow-content">
+        <div class="flow-title">欠員 → 候補リストを自動提示</div>
+        <div class="flow-desc">空き・スキル・公平性を考慮して候補を自動リスト化。牛ノ浜さんが選ぶ → エージェントが打診</div>
+        <span class="flow-tag tag-new">半自動化</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 16px; padding: 12px 16px; background: var(--green-bg); border-radius: var(--r); font-size: 0.85rem; color: var(--green); border: 1px solid var(--green-border);">
+    エージェント化後: 8ステップ中7つが自動 → <strong>自動化率 87.5%</strong>（手動は「確認・承認」のみ）
+  </div>
+</div>
+
+<!-- ========================================== -->
+<div class="sec">
+  <div class="sec-label" style="color: var(--accent);">Part 2.5</div>
+  <h2>Before / After 一覧</h2>
+
+  <div class="compare">
+    <div class="compare-card now">
+      <h3>今（手動が多い）</h3>
+      <ul>
+        <li>希望提出の声かけ → 自分でやる</li>
+        <li>催促 → 誰が出してないか確認して個別連絡</li>
+        <li>シフト生成 → 自分でボタン押す</li>
+        <li>確定通知 → Slack投稿は自動だが個別通知なし</li>
+        <li>欠員対応 → 自分で探して自分で頼む</li>
+        <li>設定変更 → 開発者に依頼</li>
+      </ul>
+    </div>
+    <div class="compare-card future">
+      <h3>これから（ほぼ自動）</h3>
+      <ul>
+        <li>希望提出 → エージェントが自動で全員にDM</li>
+        <li>催促 → エージェントが毎日自動チェック+DM</li>
+        <li>シフト生成 → 締切で自動実行</li>
+        <li>確定通知 → 全員にSlack DMで個別シフト送信</li>
+        <li>欠員対応 → 候補リスト自動提示、選ぶだけ</li>
+        <li>設定変更 → Notionの画面から自分で変更可能</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<div class="sec">
+  <div class="sec-label" style="color: var(--purple);">Part 3</div>
+  <h2>教えてほしいこと</h2>
+  <div class="sec-desc">牛ノ浜さんしか知らない「現場のリアル」を聞かせてください</div>
+
+  <div class="q-grid">
+
+    <div class="q-card pain">
+      <span class="q-num">Pain 1</span>
+      <div class="q-main">毎月のシフト作成で、一番時間がかかっている作業は何ですか？</div>
+      <div class="q-why">自動化の優先順位を正しくつけたい。一番痛いところから解消する。</div>
+      <div class="q-maps">反映先: 全体の優先順位</div>
+    </div>
+
+    <div class="q-card pain">
+      <span class="q-num">Pain 2</span>
+      <div class="q-main">催促は毎月何回くらいしていますか？一番ストレスを感じる瞬間は？</div>
+      <div class="q-why">催促の頻度とタイミングの設計に直結する。催促メッセージのトーンも知りたい。</div>
+      <div class="q-maps">反映先: <code>DB6 通知ルール</code> の催促テンプレート・頻度設定</div>
+    </div>
+
+    <div class="q-card pain">
+      <span class="q-num">Pain 3</span>
+      <div class="q-main">OR-Toolsで生成されたシフト案、毎回どのくらい手直ししていますか？</div>
+      <div class="q-why">手直しが多いなら、OR-Toolsの制約条件を改善する必要がある。「いつもここが変」があれば聞きたい。</div>
+      <div class="q-maps">反映先: <code>DB5 必要人数</code> <code>DB3 スタッフ</code> の制約条件</div>
+    </div>
+
+    <div class="q-card confirm">
+      <span class="q-num">Confirm 1</span>
+      <div class="q-main">希望の提出は今どうやっていますか？スタッフはNotionに直接入力？</div>
+      <div class="q-why">Slack DM経由にする予定だが、今の入力方法と変わる部分を把握したい。スタッフ全員Slackを使っている前提でOK？</div>
+      <div class="q-maps">反映先: <code>D6 希望収集IF</code> の最終確認</div>
+    </div>
+
+    <div class="q-card confirm">
+      <span class="q-num">Confirm 2</span>
+      <div class="q-main">欠員は月に何回くらい発生しますか？どうやって代わりを探していますか？</div>
+      <div class="q-why">MVPでは候補リスト提示までを予定。頻度が高いならもっと自動化する価値がある。</div>
+      <div class="q-maps">反映先: <code>D8 イレギュラー対応</code> のスコープ判断</div>
+    </div>
+
+    <div class="q-card insight">
+      <span class="q-num">Insight 1</span>
+      <div class="q-main">シフトを組む時に「この人とこの人は一緒にしたい/避けたい」みたいなルールはありますか？</div>
+      <div class="q-why">ペアリング制約をOR-Toolsに追加できる。暗黙知になっているルールを拾いたい。</div>
+      <div class="q-maps">反映先: <code>DB3 スタッフ</code> のペアリング設定</div>
+    </div>
+
+    <div class="q-card insight">
+      <span class="q-num">Insight 2</span>
+      <div class="q-main">「この曜日は絶対この人がいないとダメ」みたいなスキル依存はありますか？</div>
+      <div class="q-why">スキルの非代替性を把握したい。特定の人に依存しているポジションがあれば、シフト生成の制約として組み込む。</div>
+      <div class="q-maps">反映先: <code>DB3 スタッフ</code> <code>DB5 必要人数</code> のスキル条件</div>
+    </div>
+
+    <div class="q-card insight">
+      <span class="q-num">Insight 3</span>
+      <div class="q-main">繁忙日のパターンはありますか？（金曜が忙しい、月末は暇、イベント日、等）</div>
+      <div class="q-why">時間帯別必要人数を正確に設定するため。東京と福岡で違うパターンがあるかも知りたい。</div>
+      <div class="q-maps">反映先: <code>DB5 必要人数</code> <code>DB7 特別日</code></div>
+    </div>
+
+    <div class="q-card insight">
+      <span class="q-num">Insight 4</span>
+      <div class="q-main">大学生スタッフの試験期間など、特定の時期に人が足りなくなるパターンはありますか？</div>
+      <div class="q-why">福岡は大学生が多いと聞いている。予測可能な人手不足期間があるなら、事前に対策を組み込みたい。</div>
+      <div class="q-maps">反映先: <code>DB7 特別日</code> の年間パターン</div>
+    </div>
+
+    <div class="q-card opp">
+      <span class="q-num">Opp 1</span>
+      <div class="q-main">「シフト以外でも、こういうことが自動になったら助かる」というものはありますか？</div>
+      <div class="q-why">シフトエージェントの将来拡張の種を拾いたい。店長業務全体の中でシフト以外の痛みも把握しておく。</div>
+      <div class="q-maps">反映先: 将来ロードマップ</div>
+    </div>
+
+    <div class="q-card opp">
+      <span class="q-num">Opp 2</span>
+      <div class="q-main">Notionの管理画面で「ここが見づらい」「こういう画面がほしい」はありますか？</div>
+      <div class="q-why">今回7つのDBを新しく作る。既存のNotionの使い勝手の課題を先に知っておきたい。</div>
+      <div class="q-maps">反映先: <code>D5 管理画面</code> のUI設計</div>
+    </div>
+
+    <div class="q-card opp">
+      <span class="q-num">Opp 3</span>
+      <div class="q-main">Part 2の「これから」の説明を聞いて、「ここはこうしてほしい」「これは要らない」はありますか？</div>
+      <div class="q-why">仕様に反映する最後のチャンス。率直なフィードバックがほしい。</div>
+      <div class="q-maps">反映先: 全体仕様</div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /wrap -->
+</body>
+</html>
