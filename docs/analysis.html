@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<style id="auth-gate-style">
+body>*:not(#auth-gate){display:none!important}
+#auth-gate{display:flex!important;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:99999;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#auth-gate .box{max-width:340px;width:100%;padding:2rem;text-align:center}
+#auth-gate h1{font-size:1.1rem;color:#fff;margin-bottom:1.5rem;font-weight:500}
+#auth-gate input{width:100%;padding:.65rem 1rem;background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:1rem;outline:none;margin-bottom:.6rem}
+#auth-gate input:focus{border-color:#666}
+#auth-gate button{width:100%;padding:.65rem;background:#fff;color:#000;border:none;border-radius:6px;font-size:.9rem;font-weight:600;cursor:pointer}
+#auth-gate button:hover{background:#ddd}
+#auth-gate .err{color:#f44;font-size:.8rem;margin-top:.5rem;visibility:hidden}
+#auth-gate .err.show{visibility:visible}
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>牛ノ浜ヒアリング分析 — awabar シフトエージェント</title>
+<style>
+:root {
+  --bg: #0c0e14;
+  --bg2: #12151f;
+  --bg3: #181c28;
+  --bg4: #1e2233;
+  --bg5: #252a3a;
+  --tx: #e4e2df;
+  --tx2: #9ca3af;
+  --tx3: #6b7280;
+  --accent: #f59e0b;
+  --accent2: #d97706;
+  --green: #10b981;
+  --green2: #065f46;
+  --red: #ef4444;
+  --red2: #7f1d1d;
+  --blue: #3b82f6;
+  --blue2: #1e3a5f;
+  --purple: #a78bfa;
+  --purple2: #4c1d95;
+  --cyan: #22d3ee;
+  --border: #1e2233;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg); color: var(--tx); line-height: 1.7; }
+
+/* Layout */
+.container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
+section { padding: 3rem 0; }
+section + section { border-top: 1px solid var(--border); }
+
+/* Typography */
+h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 1.5rem; }
+h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.8rem; }
+h4 { font-size: 0.95rem; font-weight: 600; color: var(--tx2); margin-bottom: 0.5rem; }
+p { color: var(--tx2); }
+small { font-size: 0.8rem; color: var(--tx3); }
+
+/* Hero */
+.hero { padding: 4rem 0 3rem; text-align: center; }
+.hero h1 { margin-bottom: 0.5rem; }
+.hero .date { color: var(--accent); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+.hero p { max-width: 600px; margin: 0 auto; font-size: 0.95rem; }
+
+/* Stats bar */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 2rem 0; }
+.stat { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; text-align: center; }
+.stat .num { font-size: 1.8rem; font-weight: 700; }
+.stat .label { font-size: 0.75rem; color: var(--tx3); margin-top: 0.2rem; }
+.stat.gold .num { color: var(--accent); }
+.stat.green .num { color: var(--green); }
+.stat.blue .num { color: var(--blue); }
+.stat.purple .num { color: var(--purple); }
+
+/* Nav */
+.nav { position: sticky; top: 0; z-index: 100; background: rgba(12,14,20,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0.6rem 0; }
+.nav-inner { display: flex; gap: 0.3rem; overflow-x: auto; padding: 0 1.5rem; max-width: 900px; margin: 0 auto; }
+.nav a { white-space: nowrap; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.78rem; color: var(--tx3); text-decoration: none; transition: all 0.2s; }
+.nav a:hover, .nav a.active { background: var(--bg4); color: var(--tx); }
+
+/* Gap section */
+.gap-grid { display: grid; grid-template-columns: 1fr 40px 1fr; gap: 0; margin: 1.5rem 0; }
+.gap-col { background: var(--bg2); border: 1px solid var(--border); padding: 1.5rem; border-radius: 10px; }
+.gap-col h3 { font-size: 0.85rem; color: var(--tx3); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.gap-col.before { border-top: 3px solid var(--tx3); }
+.gap-col.after { border-top: 3px solid var(--accent); }
+.gap-arrow { display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--accent); }
+.gap-item { padding: 0.6rem 0; font-size: 0.88rem; }
+.gap-item + .gap-item { border-top: 1px solid var(--border); }
+.gap-item .tag { display: inline-block; font-size: 0.65rem; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600; margin-left: 0.4rem; vertical-align: middle; }
+.tag-confirmed { background: var(--green2); color: var(--green); }
+.tag-new { background: var(--accent); color: #000; }
+.tag-shift { background: var(--purple2); color: var(--purple); }
+.tag-bug { background: var(--red2); color: var(--red); }
+
+/* Finding cards */
+.finding { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.2rem; overflow: hidden; }
+.finding-header { padding: 1.2rem 1.5rem; cursor: pointer; display: flex; align-items: flex-start; gap: 1rem; transition: background 0.2s; }
+.finding-header:hover { background: var(--bg3); }
+.finding-num { flex-shrink: 0; width: 42px; height: 42px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; }
+.finding-num.pain { background: var(--red2); color: var(--red); }
+.finding-num.insight { background: var(--blue2); color: var(--blue); }
+.finding-num.opp { background: var(--purple2); color: var(--purple); }
+.finding-num.bug { background: #4a3000; color: var(--accent); }
+.finding-title { flex: 1; }
+.finding-title h3 { margin-bottom: 0.2rem; font-size: 1rem; }
+.finding-title p { font-size: 0.82rem; }
+.finding-toggle { flex-shrink: 0; color: var(--tx3); font-size: 1.2rem; transition: transform 0.3s; padding-top: 0.3rem; }
+.finding.open .finding-toggle { transform: rotate(180deg); }
+.finding-body { display: none; padding: 0 1.5rem 1.5rem; }
+.finding.open .finding-body { display: block; }
+
+/* Quote */
+.quote { background: var(--bg3); border-left: 3px solid var(--accent); padding: 0.8rem 1rem; border-radius: 0 8px 8px 0; margin: 0.8rem 0; font-size: 0.88rem; color: var(--tx); font-style: italic; }
+.quote .speaker { font-style: normal; font-weight: 600; color: var(--accent); font-size: 0.75rem; display: block; margin-bottom: 0.2rem; }
+
+/* Assumed vs Reality */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin: 1rem 0; }
+.compare-box { padding: 0.8rem 1rem; border-radius: 8px; font-size: 0.85rem; }
+.compare-box.assumed { background: var(--bg4); border: 1px solid var(--border); }
+.compare-box.reality { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); }
+.compare-box h4 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
+.compare-box.assumed h4 { color: var(--tx3); }
+.compare-box.reality h4 { color: var(--accent); }
+
+/* Decision cards */
+.decision { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+.decision-head { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; }
+.decision-id { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px; background: var(--bg5); color: var(--tx3); }
+.decision h3 { font-size: 1rem; }
+.options { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.8rem 0; }
+.option { padding: 0.7rem 1rem; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; display: flex; align-items: flex-start; gap: 0.6rem; transition: all 0.2s; }
+.option .letter { flex-shrink: 0; width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; background: var(--bg4); color: var(--tx3); }
+.option.recommended { border-color: var(--green); background: rgba(16,185,129,0.05); }
+.option.recommended .letter { background: var(--green2); color: var(--green); }
+.option .rec-badge { font-size: 0.65rem; background: var(--green2); color: var(--green); padding: 0.1rem 0.4rem; border-radius: 3px; margin-left: 0.5rem; font-weight: 600; }
+.decision-reason { font-size: 0.82rem; color: var(--tx2); background: var(--bg3); padding: 0.8rem 1rem; border-radius: 8px; margin-top: 0.8rem; }
+.decision-reason strong { color: var(--tx); }
+
+/* Phase / Roadmap */
+.phase { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; position: relative; }
+.phase::before { content: ''; position: absolute; left: 2.2rem; top: 100%; width: 2px; height: 1rem; background: var(--border); }
+.phase:last-child::before { display: none; }
+.phase-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.phase-num { font-size: 0.7rem; font-weight: 700; padding: 0.3rem 0.7rem; border-radius: 6px; }
+.phase-num.now { background: var(--accent); color: #000; }
+.phase-num.next { background: var(--blue2); color: var(--blue); }
+.phase-num.future { background: var(--bg5); color: var(--tx3); }
+.phase-date { font-size: 0.78rem; color: var(--tx3); }
+.feature-list { list-style: none; }
+.feature-list li { padding: 0.4rem 0; font-size: 0.88rem; display: flex; align-items: flex-start; gap: 0.5rem; }
+.feature-list li::before { content: ''; flex-shrink: 0; width: 6px; height: 6px; border-radius: 50%; margin-top: 0.55rem; }
+.feature-list .core li::before { background: var(--green); }
+.feature-list .fix li::before { background: var(--accent); }
+.feature-list .new li::before { background: var(--blue); }
+.feature-list .future li::before { background: var(--purple); }
+.fl-section { margin-bottom: 0.6rem; }
+.fl-label { font-size: 0.7rem; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem; padding-left: 1rem; }
+
+/* Impact map */
+.impact-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0; font-size: 0.82rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); align-items: center; }
+.impact-row.header { font-weight: 600; color: var(--tx3); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid var(--border); }
+.impact-cell { padding: 0.3rem 0.6rem; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.dot-high { background: var(--red); }
+.dot-mid { background: var(--accent); }
+.dot-low { background: var(--green); }
+
+/* Summary box */
+.summary-box { background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.02)); border: 1px solid rgba(245,158,11,0.2); border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; }
+.summary-box h3 { color: var(--accent); margin-bottom: 0.8rem; }
+
+/* Flow diagram */
+.flow { display: flex; flex-direction: column; gap: 0; margin: 1.5rem 0; }
+.flow-step { display: flex; align-items: stretch; gap: 0; }
+.flow-line { width: 40px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; }
+.flow-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 2px solid var(--border); }
+.flow-dot.active { border-color: var(--accent); background: var(--accent); }
+.flow-dot.done { border-color: var(--green); background: var(--green); }
+.flow-connector { flex: 1; width: 2px; background: var(--border); }
+.flow-content { flex: 1; padding: 0.3rem 0 1.5rem; }
+.flow-content h4 { font-size: 0.88rem; color: var(--tx); }
+.flow-content p { font-size: 0.8rem; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .compare { grid-template-columns: 1fr; }
+  .gap-grid { grid-template-columns: 1fr; }
+  .gap-arrow { transform: rotate(90deg); padding: 0.5rem; }
+  .impact-row { grid-template-columns: 1fr; gap: 0.2rem; }
+  .impact-row.header { display: none; }
+  h1 { font-size: 1.5rem; }
+}
+</style>
+</head>
+<body>
+<div id="auth-gate">
+<div class="box">
+<h1>パスワードを入力してください</h1>
+<form id="auth-form">
+<input type="password" id="auth-pw" placeholder="パスワード" autofocus required>
+<button type="submit">入る</button>
+</form>
+<p class="err" id="auth-err">パスワードが違います</p>
+</div>
+</div>
+<script>
+(function(){
+var K="awabar-docs-auth";
+if(sessionStorage.getItem(K)==="ok"){
+document.getElementById("auth-gate").remove();
+document.getElementById("auth-gate-style").remove();
+return;
+}
+document.getElementById("auth-form").addEventListener("submit",function(e){
+e.preventDefault();
+if(document.getElementById("auth-pw").value==="nikarasu"){
+sessionStorage.setItem(K,"ok");
+document.getElementById("auth-gate").remove();
+document.getElementById("auth-gate-style").remove();
+}else{
+document.getElementById("auth-err").classList.add("show");
+document.getElementById("auth-pw").value="";
+document.getElementById("auth-pw").focus();
+}
+});
+})();
+</script>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="container">
+    <p class="date">2026.02.28 HEARING ANALYSIS</p>
+    <h1>想定と現実のGAP、<br>そしてこれから作るもの</h1>
+    <p>牛ノ浜さんヒアリング（33分）から得た10の発見と、それを踏まえたプロジェクト方針。</p>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="container">
+  <div class="stats">
+    <div class="stat gold"><div class="num">10</div><div class="label">新たな発見</div></div>
+    <div class="stat blue"><div class="num">7</div><div class="label">意思決定項目</div></div>
+    <div class="stat green"><div class="num">0</div><div class="label">MVPスコープ変更</div></div>
+    <div class="stat purple"><div class="num">4月</div><div class="label">実戦投入目標</div></div>
+  </div>
+</div>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#gap">想定 vs 現実</a>
+    <a href="#findings">10の発見</a>
+    <a href="#decisions">7つの判断</a>
+    <a href="#roadmap">これからの進め方</a>
+    <a href="#build">作るもの</a>
+  </div>
+</nav>
+
+<!-- Section 1: Gap -->
+<section id="gap">
+<div class="container">
+  <h2>想定と現実</h2>
+  <p style="margin-bottom:1.5rem;">ヒアリング前に想定していたペインと、実際に聞けた現場のリアル。</p>
+
+  <div class="gap-grid">
+    <div class="gap-col before">
+      <h3>ヒアリング前の想定</h3>
+      <div class="gap-item">催促（出してね）が最大の手間 <span class="tag tag-shift">催促</span></div>
+      <div class="gap-item">締切までの収集フェーズがボトルネック</div>
+      <div class="gap-item">シフト生成の品質はまあまあ</div>
+      <div class="gap-item">通知はSlack DMで十分 <span class="tag tag-confirmed">確認済</span></div>
+      <div class="gap-item">スタッフは受動的（言われたら出す）</div>
+      <div class="gap-item">公平性は特に問題なし</div>
+      <div class="gap-item">タイムライン: 15日→25日確定（推定）</div>
+    </div>
+    <div class="gap-arrow">→</div>
+    <div class="gap-col after">
+      <h3>現実（牛ノ浜さんの声）</h3>
+      <div class="gap-item"><strong>生成「後」の穴埋めが最大の地獄</strong> <span class="tag tag-new">最重要発見</span></div>
+      <div class="gap-item">22〜25日の3日間が全てを食う <span class="tag tag-new">NEW</span></div>
+      <div class="gap-item">とんちんかんな結果がたまに出る <span class="tag tag-bug">BUG</span></div>
+      <div class="gap-item">Slack確定 + 個別DMが必須 <span class="tag tag-confirmed">確認済</span></div>
+      <div class="gap-item">スタッフは能動的（空き枠くれ！） <span class="tag tag-new">NEW</span></div>
+      <div class="gap-item">公平性が最大の人間関係ストレス <span class="tag tag-new">NEW</span></div>
+      <div class="gap-item">15日募集→22日締切→25日確定 <span class="tag tag-confirmed">確認済</span></div>
+    </div>
+  </div>
+
+  <div class="summary-box">
+    <h3>最大のGAP</h3>
+    <p style="color:var(--tx);font-size:0.95rem;">
+      我々は「シフト希望を<strong>集める前</strong>」が大変だと思っていた。<br>
+      現実は「シフトを<strong>組んだ後</strong>」が地獄だった。
+    </p>
+    <p style="margin-top:0.8rem;font-size:0.85rem;">
+      生成されたシフトに穴がある → 全スタッフに個別DMで「ここ入れない？」と聞きまくる → 返信待ち → 別の人に聞く → 3日消える。<br>
+      グループに投げても誰も反応しない。1対1でないと動かない。
+    </p>
+  </div>
+</div>
+</section>
+
+<!-- Section 2: Findings -->
+<section id="findings">
+<div class="container">
+  <h2>10の発見</h2>
+  <p style="margin-bottom:1.5rem;">牛ノ浜さんの言葉から抽出した、設計に影響する発見。クリックで詳細を開く。</p>
+
+  <!-- F1 -->
+  <div class="finding open" onclick="this.classList.toggle('open')">
+    <div class="finding-header">
+      <div class="finding-num pain">F1</div>
+      <div class="finding-title">
+        <h3>最大の痛み = 生成後の穴埋め作業</h3>
+        <p>催促ではなく、足りない枠を全員に個別DMで聞きまくる作業が22〜25日の3日間を食う</p>
+      </div>
+      <div class="finding-toggle">▼</div>
+    </div>
+    <div class="finding-body">
+      <div class="compare">
+        <div class="compare-box assumed"><h4>想定していたこと</h4>催促（出してねの声かけ）が最大コスト</div>
+        <div class="compare-box reality"><h4>実際</h4>催促より「穴埋めのお願い」が圧倒的に重い</div>
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        空いてる、空きのあるシフトとかを、いちいちみんなに、ここを入れないんで、追加で入れないって、みんなに聞きまくるんすよ。グループLINEとかで。で、返信待ちもあれですし、返信がないと、次進まないし。それでめっちゃ時間かかりますね。
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        グループで言っても、みんな反応しないんすよ。個人で僕が送ってるような感じになると、多分みんな反応しやすいんかなって。
+      </div>
+      <h4 style="margin-top:1rem;">設計への影響</h4>
+      <p style="font-size:0.85rem;">エージェントの真価は「自動生成」ではなく「穴埋め交渉の自動化」にある。MVP後の最優先拡張機能。アーキテクチャ設計時にこの拡張を見据えておく必要がある。</p>
+    </div>
+  </div>
+
+  <!-- F2 -->
+  <div class="finding" onclick="this.classList.toggle('open')">
+    <div class="finding-header">
+      <div class="finding-num pain">F2</div>
+      <div class="finding-title">
+        <h3>学生の偏り問題</h3>
+        <p>同じ大学・学部の学生が同じ日に集中し、月ごとのばらつきが大きい</p>
+      </div>
+      <div class="finding-toggle">▼</div>
+    </div>
+    <div class="finding-body">
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        学校が同じ子がいるんすよね。で、学部も多分一緒で、授業も一緒みたいになった時に、その子二人同時その日にシフト入れちゃったり。
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        先月めっちゃ、逆にシフト良かったのに今月全然みんな入らんやんみたいな。
+      </div>
+      <h4 style="margin-top:1rem;">設計への影響</h4>
+      <p style="font-size:0.85rem;">「スタッフ属性（大学・学部）」をDBに持ち、同属性スタッフの集中度を検知するロジックが将来的に有効。まずは不足日の早期検知（F8）で対処。</p>
+    </div>
+  </div>
+
+  <!-- F3 -->
+  <div class="finding" onclick="this.classList.toggle('open')">
+    <div class="finding-header">
+      <div class="finding-num insight">F3</div>
+      <div class="finding-title">
+        <h3>スタッフ側からの「空き枠くれ」ニーズ</h3>
+        <p>「シフト作成中に空いてるところ教えて」とスタッフから言われる。双方向マッチング。</p>
+      </div>
+      <div class="finding-toggle">▼</div>
+    </div>
+    <div class="finding-body">
+      <div class="compare">
+        <div class="compare-box assumed"><h4>想定</h4>スタッフは受動的。店側が一方的に割り振る。</div>
+        <div class="compare-box reality"><h4>実際</h4>スタッフが能動的に空き枠を求めてくる。双方向。</div>
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        逆に空きがあったらそこ入りたいからみたいな子が、シフト途中段階の時に、なんか空きある？みたいな感じでスタッフから。
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        意外と働きたいっていう子結構多くて。多分時給高いのもあるし、あとアーバーにいる子たちがアーバーしかやってないんすよ、アルバイトを。
+      </div>
+      <h4 style="margin-top:1rem;">設計への影響</h4>
+      <p style="font-size:0.85rem;">awabarは「人手不足」ではなく「マッチング不足」。スタッフ側からの空き枠照会機能は、穴埋めの自動化（F1）と表裏一体。Phase 2で「空き枠ボード」をSlackに実装すれば、店もスタッフもハッピー。</p>
+    </div>
+  </div>
+
+  <!-- F4 -->
+  <div class="finding" onclick="this.classList.toggle('open')">
+    <div class="finding-header">
+      <div class="finding-num pain">F4</div>
+      <div class="finding-title">
+        <h3>公平性の不満</h3>
+        <p>たくさん出したのに少なく出した人と同じ日数しか入れない → スタッフ不満</p>
+      </div>
+      <div class="finding-toggle">▼</div>
+    </div>
+    <div class="finding-body">
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        私めっちゃ出したのにあの子と一緒みたいな。そういうのは、なんかめっちゃ言われるんすよ。僕自身が。けど、まあ、ね、それは色々理由があってのそれなのに、みたいな。
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        途中ぐらいからみんなは、削られるの覚悟してのめっちゃ出し、出してくるんすよ。3、3日4日は絶対削られるなって思ってシフトを出してくる。
+      </div>
+      <h4 style="margin-top:1rem;">設計への影響</h4>
+      <p style="font-size:0.85rem;">OR-Toolsの制約に「提出比率に応じた配置優先度」を入れることで改善可能。ただし、F5（スキル判断）との兼ね合いがある。Phase 2で「提出日数 vs 配置日数」の可視化から着手。</p>
+    </div>
+  </div>
+
+  <!-- F5 -->
+  <div class="finding" onclick="this.classList.toggle('open')">
+    <div class="finding-header">
+      <div class="finding-num insight">F5</div>
+      <div class="finding-title">
+        <h3>スキル vs 意欲のジレンマ</h3>
+        <p>入りたいと言ってくれた人がスキル不足 → 入れたくないが断れない人間関係問題</p>
+      </div>
+      <div class="finding-toggle">▼</div>
+    </div>
+    <div class="finding-body">
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        入りたいよって言われた人がそんなに大して売り上げも伸ばせないしってなった時に、本当空いてるけど入れたくないなみたいな子とかあったりして。だから他の人に逆に聞いて、その子が空いてたらその子を優先する。
+      </div>
+      <div class="quote">
+        <span class="speaker">小竹</span>
+        こっちから入れるって言ってくれたのに、別の人に声かけて、その人入れてたら、次からその子言ってくれなくなるかもしれない。
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        もうマジでめっちゃ考えますよね、そこは。最悪だからそうなったら、もう僕ワンオペとかも全然やるし、みたいな。
+      </div>
+      <h4 style="margin-top:1rem;">設計への影響</h4>
+      <p style="font-size:0.85rem;">これは最も人間的な判断であり、完全自動化すべきでない領域。ただし、AIが候補をスコア付きで提示し、牛ノ浜さんが選ぶ形なら、「AIが選んだ」という言い訳を提供できる。Phase 2の穴埋め機能で考慮。</p>
+    </div>
+  </div>
+
+  <!-- F6 -->
+  <div class="finding" onclick="this.classList.toggle('open')">
+    <div class="finding-header">
+      <div class="finding-num opp">F6</div>
+      <div class="finding-title">
+        <h3>3者グループチャット構想（牛ノ浜さん発案）</h3>
+        <p>「牛ノ浜 + スタッフ + AI」の3人グループが全スタッフ分あれば理想</p>
+      </div>
+      <div class="finding-toggle">▼</div>
+    </div>
+    <div class="finding-body">
+      <div class="quote">
+        <span class="speaker">小竹</span>
+        牛ノ浜さんとバイトの子とAIの3人のグループができて、そこにAIが言うとか。
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        ああ、そうそう、そう、それが、全員のところにあったらめっちゃ、やりやすいんかなって感じ。
+      </div>
+      <h4 style="margin-top:1rem;">設計への影響</h4>
+      <p style="font-size:0.85rem;">Slack DM（D6確定済み）の発展形。MVPではAI→スタッフの1対1DMだが、将来的に「店長も見える」3者チャネルにすることで、透明性と管理性が両立する。Adapter Pattern（D11）でチャネル構成を柔軟にしておく。</p>
+    </div>
+  </div>
+
+  <!-- F7 -->
+  <div class="finding" onclick="this.classList.toggle('open')">
+    <div class="finding-header">
+      <div class="finding-num opp">F7</div>
+      <div class="finding-title">
+        <h3>段階的シフト構築への強い支持</h3>
+        <p>「出した人からどんどん組んでいく」方式に「新しい、楽」と好反応</p>
+      </div>
+      <div class="finding-toggle">▼</div>
+    </div>
+    <div class="finding-body">
+      <div class="compare">
+        <div class="compare-box assumed"><h4>現行</h4>全員揃ってから一括生成（人力で何度も見るのが大変だから）</div>
+        <div class="compare-box reality"><h4>理想</h4>来た人からAIが逐次組む → 早く出すほど有利</div>
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        新しいっすね。あと、楽ですね、そっちの方が。
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        早い人からこうどんどんどんどん。
+      </div>
+      <h4 style="margin-top:1rem;">設計への影響</h4>
+      <p style="font-size:0.85rem;">アーキテクチャの根本変更が必要（イベント駆動で「希望受信→ドラフト更新」）。MVPは一括生成のまま、Phase 2で逐次方式に進化させる。Inngestのイベントベース設計なら拡張は自然。</p>
+    </div>
+  </div>
+
+  <!-- F8 -->
+  <div class="finding" onclick="this.classList.toggle('open')">
+    <div class="finding-header">
+      <div class="finding-num opp">F8</div>
+      <div class="finding-title">
+        <h3>不足日の早期検知 + インセンティブ</h3>
+        <p>人が集まりにくい日を予測 → 時給UPで募集すれば解決するのでは</p>
+      </div>
+      <div class="finding-toggle">▼</div>
+    </div>
+    <div class="finding-body">
+      <div class="quote">
+        <span class="speaker">小竹</span>
+        この辺は多分人が集まりにくいだろうっていうのが分かってれば、じゃあ先にこっちから、この辺の日に出してくれたら、例えばですけど、時給100円アップとか。
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        ありますね。それは多分あると思います。
+      </div>
+      <h4 style="margin-top:1rem;">設計への影響</h4>
+      <p style="font-size:0.85rem;">過去シフトデータから曜日別・時期別の不足傾向を学習可能。Phase 2〜3で「不足予測アラート + 動的インセンティブ」として実装。小笠原さんが好みそうな「先進的」機能。</p>
+    </div>
+  </div>
+
+  <!-- F9 -->
+  <div class="finding" onclick="this.classList.toggle('open')">
+    <div class="finding-header">
+      <div class="finding-num bug">F9</div>
+      <div class="finding-title">
+        <h3>シフト生成のバグ（3件）</h3>
+        <p>2個同時生成 / 希望外の長時間配置 / カフェスタッフがバーに配置</p>
+      </div>
+      <div class="finding-toggle">▼</div>
+    </div>
+    <div class="finding-body">
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        シフト生成を押したらなんか急に2個同時に出てきたりとか。
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        僕じゃない人が8時間いる。なんか僕になってるみたいな。あとカフェスタッフがなんか、夜のバーの8時間、僕の代わりになってるみたいな。
+      </div>
+      <h4 style="margin-top:1rem;">設計への影響</h4>
+      <p style="font-size:0.85rem;color:var(--accent);">エージェントの信頼性に直結。MVPと並行で修正必須。</p>
+      <ul style="font-size:0.85rem;color:var(--tx2);padding-left:1.2rem;margin-top:0.5rem;">
+        <li>2個同時生成 → フロントのダブルクリック防止 or バックエンドの排他制御</li>
+        <li>希望外配置 → OR-Toolsの制約条件を検証</li>
+        <li>職種ミスマッチ → スタッフの「対応可能ポジション」制約を確認</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- F10 -->
+  <div class="finding" onclick="this.classList.toggle('open')">
+    <div class="finding-header">
+      <div class="finding-num bug">F10</div>
+      <div class="finding-title">
+        <h3>表示形式の改善要望</h3>
+        <p>シフト表示が「場所+時間」→「名前」にしてほしい。毎月手動で直している。</p>
+      </div>
+      <div class="finding-toggle">▼</div>
+    </div>
+    <div class="finding-body">
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        あれを、名前にしてほしいんすよ、全部。名前。
+      </div>
+      <div class="quote">
+        <span class="speaker">牛ノ浜さん</span>
+        結構直してますね。今月は直しました、そっちの方が見やすくて。
+      </div>
+      <h4 style="margin-top:1rem;">設計への影響</h4>
+      <p style="font-size:0.85rem;">軽微なUI改善。Notion出力テンプレートの修正で対応可能。エージェント化と並行で即対応。Slackにスクリーンショットが送られているので参照。</p>
+    </div>
+  </div>
+
+</div>
+</section>
+
+<!-- Section 3: Decisions -->
+<section id="decisions">
+<div class="container">
+  <h2>7つの判断</h2>
+  <p style="margin-bottom:0.5rem;">発見から導かれる設計判断。推奨案を緑でマーク。</p>
+  <p style="margin-bottom:1.5rem;font-size:0.82rem;color:var(--tx3);">判断の原則: <strong style="color:var(--tx);">「3/13小笠原デモ」に間に合うMVPスコープを守る。現場知見はPhase 2の設計資産として活かす。」</strong></p>
+
+  <!-- D-NEW-1 -->
+  <div class="decision">
+    <div class="decision-head">
+      <span class="decision-id">D-NEW-1</span>
+      <h3>穴埋めフロー ← F1最大ペイン</h3>
+    </div>
+    <p style="font-size:0.85rem;margin-bottom:0.8rem;">最大のペインだが、MVPに含めるとスケジュール爆発のリスク。</p>
+    <div class="options">
+      <div class="option recommended">
+        <div class="letter">A</div>
+        <div>MVP範囲外として後回し。ただしアーキテクチャは拡張可能に設計 <span class="rec-badge">推奨</span></div>
+      </div>
+      <div class="option">
+        <div class="letter">B</div>
+        <div>MVPに「穴埋め候補提示 + 個別DM送信」を含める</div>
+      </div>
+      <div class="option">
+        <div class="letter">C</div>
+        <div>F6の3者グループ構想も含めてフル実装</div>
+      </div>
+    </div>
+    <div class="decision-reason">
+      <strong>推奨理由:</strong> 3/13デモまでにBを入れるのは工数的に厳しい。ただしこれがPhase 2の最優先機能であることは確定。Inngestのステップ設計で穴埋めフローを後から差し込める構造にしておく。
+    </div>
+  </div>
+
+  <!-- D-NEW-2 -->
+  <div class="decision">
+    <div class="decision-head">
+      <span class="decision-id">D-NEW-2</span>
+      <h3>段階的シフト構築 ← F7好反応</h3>
+    </div>
+    <p style="font-size:0.85rem;margin-bottom:0.8rem;">「来た人から逐次組む」は魅力的だが、生成ロジックの根本変更。</p>
+    <div class="options">
+      <div class="option recommended">
+        <div class="letter">A</div>
+        <div>現行通り一括生成（締切後に1回） <span class="rec-badge">推奨</span></div>
+      </div>
+      <div class="option">
+        <div class="letter">B</div>
+        <div>逐次生成（希望が来るたびにドラフト更新）</div>
+      </div>
+    </div>
+    <div class="decision-reason">
+      <strong>推奨理由:</strong> Bはアーキテクチャの根本変更であり、MVPで冒険する必要はない。Inngestのイベント駆動設計により、Phase 2でBへの移行は自然にできる。
+    </div>
+  </div>
+
+  <!-- D-NEW-3 -->
+  <div class="decision">
+    <div class="decision-head">
+      <span class="decision-id">D-NEW-3</span>
+      <h3>公平性ロジック ← F4不満</h3>
+    </div>
+    <p style="font-size:0.85rem;margin-bottom:0.8rem;">「めっちゃ出したのにあの子と一緒」問題。</p>
+    <div class="options">
+      <div class="option">
+        <div class="letter">A</div>
+        <div>MVP範囲外（まず動くものを作る）</div>
+      </div>
+      <div class="option">
+        <div class="letter">B</div>
+        <div>「提出比率に応じた配置」ルールをOR-Toolsの制約に追加</div>
+      </div>
+      <div class="option recommended">
+        <div class="letter">C</div>
+        <div>「提出日数 vs 配置日数」の可視化だけ先にやる <span class="rec-badge">推奨</span></div>
+      </div>
+    </div>
+    <div class="decision-reason">
+      <strong>推奨理由:</strong> Cは低コスト。シフト確定時に「提出○日中○日配置」を表示するだけで牛ノ浜さんの調整判断が楽になる。制約追加（B）はPhase 2で検証。
+    </div>
+  </div>
+
+  <!-- D-NEW-4 -->
+  <div class="decision">
+    <div class="decision-head">
+      <span class="decision-id">D-NEW-4</span>
+      <h3>不足日の早期検知 ← F8</h3>
+    </div>
+    <div class="options">
+      <div class="option recommended">
+        <div class="letter">A</div>
+        <div>MVP範囲外 <span class="rec-badge">推奨</span></div>
+      </div>
+      <div class="option">
+        <div class="letter">B</div>
+        <div>不足予測アラートだけ入れる（牛ノ浜さんに通知）</div>
+      </div>
+      <div class="option">
+        <div class="letter">C</div>
+        <div>不足予測 + スタッフへの自動インセンティブ提示</div>
+      </div>
+    </div>
+    <div class="decision-reason">
+      <strong>推奨理由:</strong> 良いアイデアだがインセンティブ設計（時給UP権限、予算）の議論が必要。Phase 2〜3で。小笠原さんに見せるビジョンとしては最高のネタ。
+    </div>
+  </div>
+
+  <!-- D-NEW-5 -->
+  <div class="decision">
+    <div class="decision-head">
+      <span class="decision-id">D-NEW-5</span>
+      <h3>空き枠の可視化 ← F3双方向</h3>
+    </div>
+    <div class="options">
+      <div class="option recommended">
+        <div class="letter">A</div>
+        <div>MVP範囲外 <span class="rec-badge">推奨</span></div>
+      </div>
+      <div class="option">
+        <div class="letter">B</div>
+        <div>Slack経由で空き枠一覧をスタッフが問い合わせ可能に</div>
+      </div>
+    </div>
+    <div class="decision-reason">
+      <strong>推奨理由:</strong> D-NEW-1の穴埋め機能と表裏一体。Phase 2でセットで設計すべき。
+    </div>
+  </div>
+
+  <!-- D-NEW-6 -->
+  <div class="decision">
+    <div class="decision-head">
+      <span class="decision-id">D-NEW-6</span>
+      <h3>シフト生成バグ修正 ← F9</h3>
+    </div>
+    <div class="options">
+      <div class="option recommended">
+        <div class="letter">A</div>
+        <div>エージェント化と並行で修正 <span class="rec-badge">推奨</span></div>
+      </div>
+      <div class="option">
+        <div class="letter">B</div>
+        <div>エージェント化完了後に修正</div>
+      </div>
+    </div>
+    <div class="decision-reason">
+      <strong>推奨理由:</strong> エージェントが自動生成したシフトがとんちんかんだと信頼が崩壊する。「自動で組んでくれた！→ 結果がおかしい」は最悪の体験。生成品質はエージェントの生命線。
+    </div>
+  </div>
+
+  <!-- D-NEW-7 -->
+  <div class="decision">
+    <div class="decision-head">
+      <span class="decision-id">D-NEW-7</span>
+      <h3>表示形式改善 ← F10</h3>
+    </div>
+    <div class="options">
+      <div class="option recommended">
+        <div class="letter">A</div>
+        <div>エージェント化と並行で修正 <span class="rec-badge">推奨</span></div>
+      </div>
+      <div class="option">
+        <div class="letter">B</div>
+        <div>エージェント化完了後</div>
+      </div>
+    </div>
+    <div class="decision-reason">
+      <strong>推奨理由:</strong> 軽微。Notion出力テンプレートの修正のみ。毎月の手動修正をなくせる即効性の高い改善。
+    </div>
+  </div>
+
+</div>
+</section>
+
+<!-- Section 4: Roadmap -->
+<section id="roadmap">
+<div class="container">
+  <h2>これからの進め方</h2>
+  <p style="margin-bottom:1.5rem;">ヒアリング結果を踏まえた更新版ロードマップ。</p>
+
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num now">MVP</span>
+      <h3>Phase 1: 自動フローの実現</h3>
+      <span class="phase-date">3/1〜3/13（13日間）</span>
+    </div>
+    <p style="font-size:0.85rem;margin-bottom:1rem;">「ほっといてもシフトが集まって組まれる」体験を作る。3/13 小笠原さんデモ。</p>
+
+    <div class="fl-section">
+      <div class="fl-label">コア機能（既定）</div>
+      <ul class="feature-list core">
+        <li>15日にエージェントが自動で希望収集開始（Slack DM）</li>
+        <li>未提出者への自動リマインド（個別DM）</li>
+        <li>22日にシフト自動生成（OR-Tools）</li>
+        <li>牛ノ浜さんに確認依頼 → 承認 → 全体通知</li>
+      </ul>
+    </div>
+    <div class="fl-section">
+      <div class="fl-label">並行修正（ヒアリングから追加）</div>
+      <ul class="feature-list fix">
+        <li>F9: 2個同時生成バグ修正</li>
+        <li>F9: 希望外配置・職種ミスマッチ修正</li>
+        <li>F10: 表示を「時間帯」→「名前」に変更</li>
+        <li>F10: メールアドレス → 名前表示</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num next">Phase 2</span>
+      <h3>穴埋め自動化 + 双方向マッチング</h3>
+      <span class="phase-date">3/14〜3/31</span>
+    </div>
+    <p style="font-size:0.85rem;margin-bottom:1rem;">ヒアリングで判明した「本当のペイン」に切り込む。</p>
+    <ul class="feature-list new">
+      <li><strong>F1:</strong> 生成後の不足枠を検知 → 候補スタッフに個別DM自動送信</li>
+      <li><strong>F3:</strong> 空き枠ボード（スタッフから「空いてるとこ教えて」に自動応答）</li>
+      <li><strong>F5:</strong> 候補のスコアリング表示（牛ノ浜さんが選ぶ、AIは提案のみ）</li>
+      <li><strong>F4:</strong> 「提出日数 vs 配置日数」可視化</li>
+      <li><strong>F6:</strong> 3者チャネル構想の検証</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num future">Phase 3</span>
+      <h3>予測と最適化</h3>
+      <span class="phase-date">4月〜</span>
+    </div>
+    <p style="font-size:0.85rem;margin-bottom:1rem;">データが溜まってから威力を発揮する機能群。</p>
+    <ul class="feature-list future">
+      <li><strong>F7:</strong> 段階的シフト構築（来た人から逐次生成）</li>
+      <li><strong>F8:</strong> 不足日予測 + 動的インセンティブ（時給UP提示）</li>
+      <li><strong>F2:</strong> 学生属性ベースの偏り検知</li>
+      <li><strong>F4:</strong> 公平性制約のOR-Tools組み込み</li>
+    </ul>
+  </div>
+
+  <!-- Timeline visual -->
+  <div style="margin-top:2rem;">
+    <h3>タイムライン</h3>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;margin-top:0.8rem;overflow-x:auto;">
+      <div style="display:flex;gap:0;min-width:700px;">
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--tx3);">3/1</div>
+          <div style="height:8px;background:var(--accent);border-radius:4px 0 0 4px;margin:0.3rem 0;"></div>
+          <div style="font-size:0.7rem;color:var(--accent);">実装開始</div>
+        </div>
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--tx3);">3/10</div>
+          <div style="height:8px;background:var(--accent);margin:0.3rem 0;"></div>
+          <div style="font-size:0.7rem;color:var(--tx2);">大竹さん報告</div>
+        </div>
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--tx3);">3/13</div>
+          <div style="height:8px;background:var(--accent);border-radius:0 4px 4px 0;margin:0.3rem 0;"></div>
+          <div style="font-size:0.7rem;color:var(--accent);font-weight:600;">★小笠原デモ</div>
+        </div>
+        <div style="flex:0.3;text-align:center;">
+          <div style="font-size:0.7rem;color:transparent;">.</div>
+          <div style="height:8px;margin:0.3rem 0;"></div>
+        </div>
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--tx3);">3/15</div>
+          <div style="height:8px;background:var(--blue);border-radius:4px 0 0 4px;margin:0.3rem 0;"></div>
+          <div style="font-size:0.7rem;color:var(--blue);">Phase 2開始</div>
+        </div>
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--tx3);">3/15</div>
+          <div style="height:8px;background:var(--green);margin:0.3rem 0;"></div>
+          <div style="font-size:0.7rem;color:var(--green);">🎯 4月シフト実戦</div>
+        </div>
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--tx3);">3/31</div>
+          <div style="height:8px;background:var(--blue);border-radius:0 4px 4px 0;margin:0.3rem 0;"></div>
+          <div style="font-size:0.7rem;color:var(--blue);">Phase 2完了</div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:0.8rem;color:var(--tx3);margin-top:0.5rem;">3/15の4月シフト作成が最初の実戦。MVPの最低限 + バグ修正が間に合っている必要がある。</p>
+  </div>
+</div>
+</section>
+
+<!-- Section 5: What we're building -->
+<section id="build">
+<div class="container">
+  <h2>作るもの</h2>
+  <p style="margin-bottom:1.5rem;">MVPで実現する体験と、その先の進化。</p>
+
+  <div class="summary-box" style="background:linear-gradient(135deg, rgba(16,185,129,0.08), rgba(16,185,129,0.02)); border-color:rgba(16,185,129,0.2);">
+    <h3 style="color:var(--green);">MVPの一言定義</h3>
+    <p style="color:var(--tx);font-size:1.1rem;font-weight:600;">
+      「エージェントスイッチON」で、希望収集→催促→生成→確認→通知が<br>全自動で回るシフト作成フロー。
+    </p>
+    <p style="margin-top:0.5rem;font-size:0.85rem;">
+      牛ノ浜さんがやることは「確認して、OKを押す」だけ。
+    </p>
+  </div>
+
+  <!-- 牛ノ浜さんの1ヶ月 -->
+  <h3 style="margin-top:2rem;">MVP完成後の牛ノ浜さんの1ヶ月</h3>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-line"><div class="flow-dot active"></div><div class="flow-connector"></div></div>
+      <div class="flow-content">
+        <h4>15日 — エージェントが自動起動</h4>
+        <p>全スタッフにSlack DMで「来月のシフト希望を出してね」。牛ノ浜さんは何もしなくていい。</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="flow-dot active"></div><div class="flow-connector"></div></div>
+      <div class="flow-content">
+        <h4>15〜22日 — 自動収集 + 自動催促</h4>
+        <p>希望が来たら記録。出してない人には自動で個別リマインド。牛ノ浜さんは進捗を眺めるだけ。</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="flow-dot active"></div><div class="flow-connector"></div></div>
+      <div class="flow-content">
+        <h4>22日 — 自動シフト生成</h4>
+        <p>締切と同時にOR-Toolsでシフト生成。名前表示で見やすく。「できました」と通知。</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="flow-dot done"></div><div class="flow-connector"></div></div>
+      <div class="flow-content">
+        <h4>22〜25日 — 牛ノ浜さんが確認・修正・承認</h4>
+        <p>唯一の手動作業。生成結果を見て、必要なら微調整して「OK」。</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="flow-dot active"></div><div class="flow-connector" style="background:transparent;"></div></div>
+      <div class="flow-content">
+        <h4>承認後 — 全体通知</h4>
+        <p>全スタッフにシフト確定をSlack DMで通知。完了。</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-top:1.5rem;">
+    <h3 style="margin-bottom:0.8rem;">Phase 2で加わる体験</h3>
+    <p style="font-size:0.85rem;margin-bottom:0.8rem;color:var(--tx2);">MVPの22〜25日の「手動調整」を劇的に軽くする。</p>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-line"><div class="flow-dot" style="border-color:var(--blue);background:var(--blue);"></div><div class="flow-connector"></div></div>
+        <div class="flow-content">
+          <h4>22日 — 不足枠の自動検知</h4>
+          <p>「火曜17-22時が1名不足」をエージェントが自動検知。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-line"><div class="flow-dot" style="border-color:var(--blue);background:var(--blue);"></div><div class="flow-connector"></div></div>
+        <div class="flow-content">
+          <h4>自動 — 候補スタッフにDM</h4>
+          <p>「火曜17-22時入れますか？」を該当スタッフに個別DM。牛ノ浜さんの代わりにAIが聞きまくる。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-line"><div class="flow-dot" style="border-color:var(--blue);background:var(--blue);"></div><div class="flow-connector" style="background:transparent;"></div></div>
+        <div class="flow-content">
+          <h4>自動 — 空き枠ボード</h4>
+          <p>スタッフが「空いてるところ教えて」と聞いたら、リアルタイムで空き枠を返答。</p>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:0.85rem;color:var(--accent);margin-top:0.5rem;">→ 牛ノ浜さんの「3日間の地獄」が「候補から選んでOK押すだけ」になる。</p>
+  </div>
+
+  <!-- Architecture summary -->
+  <div style="margin-top:2rem;">
+    <h3>技術スタック（変更なし）</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-top:0.8rem;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;">
+        <h4>オーケストレーション</h4>
+        <p style="font-size:0.9rem;color:var(--tx);">Inngest</p>
+        <p style="font-size:0.78rem;">月次サイクルを自動運転</p>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;">
+        <h4>シフト生成</h4>
+        <p style="font-size:0.9rem;color:var(--tx);">OR-Tools（既存）</p>
+        <p style="font-size:0.78rem;">POST /schedule 経由で呼び出し</p>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;">
+        <h4>データ</h4>
+        <p style="font-size:0.9rem;color:var(--tx);">Notion 7DB</p>
+        <p style="font-size:0.78rem;">全体設定/店舗/スタッフ/パターン/必要人数/通知/特別日</p>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;">
+        <h4>通知</h4>
+        <p style="font-size:0.9rem;color:var(--tx);">Slack DM（Adapter Pattern）</p>
+        <p style="font-size:0.78rem;">将来LINE等に拡張可能</p>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- Footer -->
+<div style="padding:3rem 0;text-align:center;border-top:1px solid var(--border);">
+  <div class="container">
+    <p style="font-size:0.82rem;color:var(--tx3);">
+      awabar シフトエージェント — 牛ノ浜ヒアリング分析<br>
+      2026/02/28 作成 | 書き起こし全文は別途保管
+    </p>
+  </div>
+</div>
+
+<script>
+// Sticky nav active state
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 80) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+});
+</script>
+</body>
+</html>
