@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<style id="auth-gate-style">
+body>*:not(#auth-gate){display:none!important}
+#auth-gate{display:flex!important;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:99999;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#auth-gate .box{max-width:340px;width:100%;padding:2rem;text-align:center}
+#auth-gate h1{font-size:1.1rem;color:#fff;margin-bottom:1.5rem;font-weight:500}
+#auth-gate input{width:100%;padding:.65rem 1rem;background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:1rem;outline:none;margin-bottom:.6rem}
+#auth-gate input:focus{border-color:#666}
+#auth-gate button{width:100%;padding:.65rem;background:#fff;color:#000;border:none;border-radius:6px;font-size:.9rem;font-weight:600;cursor:pointer}
+#auth-gate button:hover{background:#ddd}
+#auth-gate .err{color:#f44;font-size:.8rem;margin-top:.5rem;visibility:hidden}
+#auth-gate .err.show{visibility:visible}
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>awabar シフトエージェント 設計意思決定ダッシュボード</title>
+<style>
+  :root {
+    --bg-primary: #0f1117;
+    --bg-secondary: #161822;
+    --bg-card: #1a1d2e;
+    --bg-card-hover: #1e2235;
+    --bg-elevated: #222640;
+    --text-primary: #e8e6e3;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
+    --accent-gold: #d4a853;
+    --accent-gold-dim: rgba(212, 168, 83, 0.3);
+    --accent-gold-glow: rgba(212, 168, 83, 0.08);
+    --accent-purple: #a78bfa;
+    --accent-blue: #60a5fa;
+    --border-card: rgba(255, 255, 255, 0.06);
+    --border-subtle: rgba(255, 255, 255, 0.04);
+    --status-resolved: #34d399;
+    --status-pending: #f97316;
+    --status-discussing: #eab308;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .header {
+    background: linear-gradient(180deg, #1a1d2e 0%, var(--bg-primary) 100%);
+    border-bottom: 1px solid var(--border-card);
+    padding: 40px 0 32px;
+    text-align: center;
+  }
+  .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  .header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin-bottom: 8px;
+  }
+  .header h1 span { color: var(--accent-gold); }
+  .subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .date {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+  .progress-bar-container {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(15, 17, 23, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-card);
+    padding: 12px 0;
+  }
+  .progress-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .progress-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .progress-text strong { color: var(--accent-gold); font-size: 1.1rem; }
+  .progress-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-elevated);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-gold), #e8c468);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .export-btn {
+    background: transparent;
+    border: 1px solid var(--accent-gold-dim);
+    color: var(--accent-gold);
+    padding: 6px 16px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .export-btn:hover {
+    background: var(--accent-gold-glow);
+    border-color: var(--accent-gold);
+  }
+  .export-btn.copied {
+    background: var(--accent-gold);
+    color: var(--bg-primary);
+  }
+  .section-heading {
+    margin: 40px 0 20px;
+  }
+  .section-heading h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .section-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--accent-gold-glow);
+    border: 1px solid var(--accent-gold-dim);
+    color: var(--accent-gold);
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .section-heading p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-left: 38px;
+  }
+
+  /* DR Cards Grid */
+  .dr-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .dr-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-md);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-card);
+    transition: all 0.2s;
+  }
+  .dr-card:hover {
+    background: var(--bg-card-hover);
+    box-shadow: var(--shadow-card-hover);
+  }
+  .dr-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .badge-claude {
+    background: rgba(167, 139, 250, 0.12);
+    color: var(--accent-purple);
+    border: 1px solid rgba(167, 139, 250, 0.2);
+  }
+  .badge-gemini {
+    background: rgba(96, 165, 250, 0.12);
+    color: var(--accent-blue);
+    border: 1px solid rgba(96, 165, 250, 0.2);
+  }
+  .dr-topic {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    background: var(--bg-elevated);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+  .dr-card h3 {
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+  }
+  .dr-card ul {
+    list-style: none;
+    padding: 0;
+  }
+  .dr-card li {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    padding: 3px 0 3px 16px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .dr-card li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+  .claude-card li::before { background: var(--accent-purple); }
+  .gemini-card li::before { background: var(--accent-blue); }
+
+  /* Decision Cards */
+  .decision-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+  .decision-card:hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+  .decision-card.decided {
+    border-left: 3px solid var(--status-resolved);
+  }
+  .decision-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .decision-header:hover { background: var(--bg-card-hover); }
+  .decision-number {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: var(--accent-gold);
+    background: var(--accent-gold-glow);
+    border: 1px solid var(--accent-gold-dim);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .decision-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .status-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+  .status-resolved {
+    background: rgba(52, 211, 153, 0.1);
+    color: var(--status-resolved);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+  }
+  .status-pending {
+    background: rgba(249, 115, 22, 0.1);
+    color: var(--status-pending);
+    border: 1px solid rgba(249, 115, 22, 0.2);
+  }
+  .status-discussing {
+    background: rgba(234, 179, 8, 0.1);
+    color: var(--status-discussing);
+    border: 1px solid rgba(234, 179, 8, 0.2);
+  }
+  .expand-icon {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .decision-card.expanded .expand-icon { transform: rotate(180deg); }
+  .decision-body {
+    display: none;
+    padding: 0 20px 20px;
+  }
+  .decision-card.expanded .decision-body { display: block; }
+  .decision-content { }
+  .findings {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .findings-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .findings p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .options-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+  .option-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+  }
+  .option-card.recommended {
+    border-color: var(--accent-gold-dim);
+  }
+  .option-card.selected {
+    border-color: var(--accent-gold);
+    background: rgba(212, 168, 83, 0.04);
+    box-shadow: 0 0 0 1px var(--accent-gold-dim);
+  }
+  .option-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .option-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    flex: 1;
+  }
+  .recommend-badge {
+    background: var(--accent-gold-glow);
+    color: var(--accent-gold);
+    border: 1px solid var(--accent-gold-dim);
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .selected-badge {
+    background: var(--accent-gold);
+    color: var(--bg-primary);
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    display: none;
+  }
+  .option-card.selected .selected-badge { display: inline-block; }
+  .option-desc {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .pros, .cons { font-size: 0.82rem; line-height: 1.6; }
+  .pros-label, .cons-label {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+  .pros-label { color: var(--status-resolved); }
+  .cons-label { color: #ef4444; }
+  .pros ul, .cons ul { list-style: none; padding: 0; }
+  .pros li, .cons li {
+    color: var(--text-secondary);
+    padding: 2px 0 2px 14px;
+    position: relative;
+  }
+  .pros li::before {
+    content: '+';
+    position: absolute;
+    left: 0;
+    color: var(--status-resolved);
+    font-weight: 700;
+  }
+  .cons li::before {
+    content: '-';
+    position: absolute;
+    left: 2px;
+    color: #ef4444;
+    font-weight: 700;
+  }
+  .select-btn {
+    background: transparent;
+    border: 1px solid var(--border-card);
+    color: var(--text-secondary);
+    padding: 7px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .select-btn:hover {
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+    background: var(--accent-gold-glow);
+  }
+  .option-card.selected .select-btn {
+    background: var(--accent-gold);
+    color: var(--bg-primary);
+    border-color: var(--accent-gold);
+  }
+  .resolved-content {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    padding: 16px 18px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-sm);
+    margin-top: 16px;
+    border-left: 3px solid var(--status-resolved);
+  }
+  .note-block {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: rgba(234, 179, 8, 0.06);
+    border: 1px solid rgba(234, 179, 8, 0.15);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    color: var(--status-discussing);
+  }
+  .arch-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow-card);
+    overflow-x: auto;
+  }
+  .arch-pre {
+    font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .arch-pre .highlight { color: var(--accent-gold); }
+  .arch-pre .component { color: var(--text-primary); }
+  .arch-pre .detail { color: var(--text-muted); }
+  .actions-list { list-style: none; padding: 0; }
+  .actions-list li {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    box-shadow: var(--shadow-card);
+    transition: all 0.2s;
+  }
+  .actions-list li:hover {
+    background: var(--bg-card-hover);
+    box-shadow: var(--shadow-card-hover);
+  }
+  .action-date {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: var(--accent-gold);
+    background: var(--accent-gold-glow);
+    padding: 4px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    border: 1px solid rgba(212, 168, 83, 0.2);
+    flex-shrink: 0;
+  }
+  .action-content { flex: 1; }
+  .action-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .action-detail { font-size: 0.85rem; color: var(--text-secondary); }
+  .action-tags { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .action-tag {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+  }
+  @media (max-width: 768px) {
+    .header { padding: 28px 0 24px; }
+    .header h1 { font-size: 1.3rem; }
+    .container { padding: 0 16px 60px; }
+    .progress-inner { padding: 0 16px; }
+    .dr-grid { grid-template-columns: 1fr; }
+    .pros-cons { grid-template-columns: 1fr; }
+    .progress-track { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="auth-gate">
+<div class="box">
+<h1>パスワードを入力してください</h1>
+<form id="auth-form">
+<input type="password" id="auth-pw" placeholder="パスワード" autofocus required>
+<button type="submit">入る</button>
+</form>
+<p class="err" id="auth-err">パスワードが違います</p>
+</div>
+</div>
+<script>
+(function(){
+var K="awabar-docs-auth";
+if(sessionStorage.getItem(K)==="ok"){
+document.getElementById("auth-gate").remove();
+document.getElementById("auth-gate-style").remove();
+return;
+}
+document.getElementById("auth-form").addEventListener("submit",function(e){
+e.preventDefault();
+if(document.getElementById("auth-pw").value==="nikarasu"){
+sessionStorage.setItem(K,"ok");
+document.getElementById("auth-gate").remove();
+document.getElementById("auth-gate-style").remove();
+}else{
+document.getElementById("auth-err").classList.add("show");
+document.getElementById("auth-pw").value="";
+document.getElementById("auth-pw").focus();
+}
+});
+})();
+</script>
+
+<div class="header">
+  <div class="header-inner">
+    <h1><span>awabar</span> シフトエージェント 設計意思決定ダッシュボード</h1>
+    <div class="subtitle">6本のDeepResearch（Claude&times;3 + Gemini&times;3）統合分析</div>
+    <div class="date">2026-02-27</div>
+  </div>
+</div>
+
+<div class="progress-bar-container">
+  <div class="progress-inner">
+    <div class="progress-text"><strong id="decidedCount">0</strong><span> / 12 論点決定済み</span></div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+    </div>
+    <button class="export-btn" id="exportBtn" onclick="exportDecisions()">全決定をエクスポート</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Section 1: DR Summary -->
+  <div class="section-heading">
+    <h2><span class="section-number">1</span>DR結果サマリ</h2>
+    <p>6本のDeepResearchから得られた主要知見</p>
+  </div>
+
+  <div class="dr-grid">
+    <div class="dr-card claude-card">
+      <div class="dr-card-header">
+        <span class="badge badge-claude">Claude</span>
+        <span class="dr-topic">R1</span>
+      </div>
+      <h3>Notionカスタムエージェント技術制約</h3>
+      <ul>
+        <li>カスタムエージェントはMCP経由で外部API呼出可能（直接HTTPは不可）</li>
+        <li>Slack DMはMCP経由のカスタムサーバーで実現可能（ネイティブでは不可）</li>
+        <li>Webhook Actions: POSTのみ、カスタムヘッダー対応、Fire-and-forget</li>
+        <li>料金: $10/1000クレジット、月$5-10程度</li>
+      </ul>
+    </div>
+
+    <div class="dr-card gemini-card">
+      <div class="dr-card-header">
+        <span class="badge badge-gemini">Gemini</span>
+        <span class="dr-topic">R1</span>
+      </div>
+      <h3>Notionエージェント&times;Webhook</h3>
+      <ul>
+        <li>6フローの70%はNotion機能で実現可能</li>
+        <li>構造的制約3つ: Slack DM不可、Webhook応答処理不可、リトライ不在</li>
+        <li>ハイブリッド推奨: 確定的タスク&rarr;スクラッチ、推論タスク&rarr;Agent</li>
+        <li>MCPサーバー構築コスト: 1-2週間</li>
+      </ul>
+    </div>
+
+    <div class="dr-card claude-card">
+      <div class="dr-card-header">
+        <span class="badge badge-claude">Claude</span>
+        <span class="dr-topic">R2</span>
+      </div>
+      <h3>SaaSベンチマーク+Notion設計</h3>
+      <ul>
+        <li>16ツールからドメイン駆動型DB設計（3DB）を提案</li>
+        <li>深夜営業バー固有: スキル非代替性、ペアリング制約、イベントスパイク</li>
+        <li>ハレーション回避: Human-in-the-Loop + 説明責任 + 公平性アルゴリズム</li>
+      </ul>
+    </div>
+
+    <div class="dr-card gemini-card">
+      <div class="dr-card-header">
+        <span class="badge badge-gemini">Gemini</span>
+        <span class="dr-topic">R2</span>
+      </div>
+      <h3>管理項目網羅+Notion設計</h3>
+      <ul>
+        <li>298項目&rarr;awabar向け85項目（9カテゴリ）</li>
+        <li>7DB設計: 全体設定、店舗、スタッフ、シフトパターン、必要人数、通知、特別日</li>
+        <li>ハレーション回避15項目（法令違反5、品質5、注意5）</li>
+        <li>起動前必須チェック10項目</li>
+      </ul>
+    </div>
+
+    <div class="dr-card claude-card">
+      <div class="dr-card-header">
+        <span class="badge badge-claude">Claude</span>
+        <span class="dr-topic">R3</span>
+      </div>
+      <h3>アーキテクチャ設計</h3>
+      <ul>
+        <li>Inngestを強く推奨（Durable Execution）</li>
+        <li>状態管理: Vercel KV + Notion ハイブリッド</li>
+        <li>メッセージング: Adapter Pattern（定型）+ MCP（対話）</li>
+        <li>イレギュラー: 自動提案型（Human-in-the-Loop）</li>
+      </ul>
+    </div>
+
+    <div class="dr-card gemini-card">
+      <div class="dr-card-header">
+        <span class="badge badge-gemini">Gemini</span>
+        <span class="dr-topic">R3</span>
+      </div>
+      <h3>アーキテクチャ設計ガイド</h3>
+      <ul>
+        <li>Inngest推奨（$0、Vercel統合、耐久実行）&mdash; Claude R3と完全一致</li>
+        <li>状態管理: Notion Select + Inngest内部状態</li>
+        <li>メッセージング: Adapter Patternのみ（MCPは時期尚早と判断）</li>
+        <li>4段階エスカレーション / 月額コスト$0 / 12週間ロードマップ</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Section 2: Decision Cards -->
+  <div class="section-heading">
+    <h2><span class="section-number">2</span>設計論点 意思決定</h2>
+    <p>各論点をクリックして展開。方針を選択すると進捗に反映されます</p>
+  </div>
+
+  <div id="decisionsContainer"></div>
+
+  <!-- Section 3: Architecture -->
+  <div class="section-heading">
+    <h2><span class="section-number">3</span>推奨アーキテクチャ</h2>
+    <p>全推奨方針を採用した場合の構成図</p>
+  </div>
+
+  <div class="arch-container">
+    <pre class="arch-pre"><span class="highlight">┌───────────────────────────────────────────────────────────────┐</span>
+<span class="highlight">│</span>            <span class="component">Vercel (awbacf) + Inngest</span>                         <span class="highlight">│</span>
+<span class="highlight">│</span>                                                               <span class="highlight">│</span>
+<span class="highlight">│</span>  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐  <span class="highlight">│</span>
+<span class="highlight">│</span>  │ <span class="component">Inngest</span>        │  │ <span class="component">Slack Bot</span>     │  │ <span class="component">Notification</span> │  <span class="highlight">│</span>
+<span class="highlight">│</span>  │ <span class="component">Functions</span>      │  │ <span class="component">(Bolt.js)</span>     │  │ <span class="component">Adapter Layer</span>│  <span class="highlight">│</span>
+<span class="highlight">│</span>  │ <span class="detail">・月次Cron</span>     │  │ <span class="detail">・対話UI</span>      │  │ <span class="detail">・Slack</span>      │  <span class="highlight">│</span>
+<span class="highlight">│</span>  │ <span class="detail">・催促</span>         │  │ <span class="detail">・承認</span>        │  │ <span class="detail">・(LINE)</span>     │  <span class="highlight">│</span>
+<span class="highlight">│</span>  │ <span class="detail">・状態遷移</span>     │  │ <span class="detail">・欠員対応</span>    │  │              │  <span class="highlight">│</span>
+<span class="highlight">│</span>  └───────┬────────┘  └───────┬────────┘  └───────┬────────┘  <span class="highlight">│</span>
+<span class="highlight">│</span>          └──────────────────┴───────────────────┘           <span class="highlight">│</span>
+<span class="highlight">└──────────────────────────┬────────────────────────────────────┘</span>
+                           │ <span class="detail">HTTPS</span>
+            ┌──────────────┼──────────────┐
+            ▼              ▼              ▼
+  ┌────────────────┐ ┌────────────────┐ ┌────────────────┐
+  │ <span class="component">Notion</span>         │ │ <span class="component">Cloud Run</span>     │ │ <span class="component">Notion</span>         │
+  │ <span class="component">(7 DB)</span>         │ │ <span class="component">(scheduling)</span>  │ │ <span class="component">Custom Agent</span>  │
+  │ <span class="detail">・設定</span>         │ │ <span class="detail">・OR-Tools</span>    │ │ <span class="detail">・DB検索</span>      │
+  │ <span class="detail">・状態管理</span>     │ │ <span class="detail">・/schedule</span>   │ │ <span class="detail">・要約</span>        │
+  │ <span class="detail">・UI</span>           │ │ <span class="detail">・/finalize</span>   │ │ <span class="detail">・例外検知</span>    │
+  └────────────────┘ └────────────────┘ └────────────────┘</pre>
+  </div>
+
+  <!-- Section 4: Next Actions -->
+  <div class="section-heading">
+    <h2><span class="section-number">4</span>次のアクション</h2>
+    <p>直近のマイルストーンと対応事項</p>
+  </div>
+
+  <ul class="actions-list">
+    <li>
+      <span class="action-date">2/28 18:00</span>
+      <div class="action-content">
+        <div class="action-title">牛ノ浜さんヒアリング</div>
+        <div class="action-detail">D6（希望収集インターフェース）とD10（管理項目）の現場確認。Slack vs LINE vs Notion直接入力のUXヒアリング。</div>
+        <div class="action-tags">
+          <span class="action-tag">D6</span>
+          <span class="action-tag">D10</span>
+        </div>
+      </div>
+    </li>
+    <li>
+      <span class="action-date">3/3-7</span>
+      <div class="action-content">
+        <div class="action-title">Q1-Q4議論</div>
+        <div class="action-detail">D3 状態遷移の詳細設計、D6 希望収集UX確定、D8 イレギュラー対応スコープ確定、D10 管理項目の最終リスト作成。</div>
+        <div class="action-tags">
+          <span class="action-tag">D3</span>
+          <span class="action-tag">D6</span>
+          <span class="action-tag">D8</span>
+          <span class="action-tag">D10</span>
+        </div>
+      </div>
+    </li>
+    <li>
+      <span class="action-date">3/10</span>
+      <div class="action-content">
+        <div class="action-title">大竹さん報告 + パッケージ作成</div>
+        <div class="action-detail">全論点確定後、実装パッケージを作成。大竹さんへの報告に向けた準備。</div>
+        <div class="action-tags">
+          <span class="action-tag">大竹さん報告</span>
+          <span class="action-tag">実装計画</span>
+        </div>
+      </div>
+    </li>
+    <li>
+      <span class="action-date">3/13</span>
+      <div class="action-content">
+        <div class="action-title">小笠原さん報告</div>
+        <div class="action-detail">シフトエージェントの設計方針と進捗を報告。「シフトが組めるエージェント」のデモ。</div>
+        <div class="action-tags">
+          <span class="action-tag">小笠原さん報告</span>
+          <span class="action-tag">デモ</span>
+        </div>
+      </div>
+    </li>
+  </ul>
+
+</div>
+
+<script>
+const DECISIONS = [
+  {
+    id: 'D1',
+    title: 'オーケストレーション層',
+    status: 'pending',
+    findings: 'Claude R3もGemini R3もInngestを推奨。Vercel Cronは耐久実行なし・リトライ自前で技術的負債化。Temporal/GCP Workflowsは過剰。両DRが独立して同じ結論に至った点は信頼性が高い。',
+    options: [
+      {
+        key: 'A',
+        name: '方針A: Inngest導入',
+        recommended: true,
+        desc: '$0、Vercel統合、耐久実行、step.waitForEventでHuman-in-the-Loop',
+        pros: ['耐久実行・自動リトライ', '月10万実行無料', 'TypeScript native', 'Vercelとネイティブ統合'],
+        cons: ['新しい依存追加', '学習コスト']
+      },
+      {
+        key: 'B',
+        name: '方針B: Vercel Cron拡張',
+        recommended: false,
+        desc: '既存パターン踏襲',
+        pros: ['追加依存なし', '既存知識で対応可'],
+        cons: ['リトライ・状態管理全て自前', '15分タイムアウト', '技術的負債化']
+      }
+    ]
+  },
+  {
+    id: 'D2',
+    title: 'awbacf↔scheduling連携',
+    status: 'resolved',
+    findings: 'コード調査(C2)で確認済み。POST /schedule (202 Accepted, X-Api-Token認証)で呼び出し可能。',
+    resolvedText: 'POST /schedule (202 Accepted, X-Api-Token認証) で呼び出し可能であることを確認。既存の連携インターフェースをそのまま利用する。',
+    options: []
+  },
+  {
+    id: 'D3',
+    title: '状態管理',
+    status: 'pending',
+    findings: 'Claude R3はVercel KV+Notion。Gemini R3はNotion Select+Inngest内部。両者ともNotionの可視性は必須と判断。月次シフト生成は月2回程度の実行で、秒間数百リクエストのような高頻度ではない。',
+    options: [
+      {
+        key: 'A',
+        name: '方針A: Notion Select + Inngest内部状態',
+        recommended: true,
+        desc: 'シンプル構成。追加インフラ不要',
+        pros: ['追加インフラ不要', '店長にNotionで可視', 'Inngestが耐久性担保'],
+        cons: ['Notion APIレート制限 (3 req/sec)', '排他制御なし']
+      },
+      {
+        key: 'B',
+        name: '方針B: Vercel KV + Notion',
+        recommended: false,
+        desc: '堅牢な構成。高速ロック・二重実行防止',
+        pros: ['高速ロック', '二重実行防止', 'Notionの可視性も維持'],
+        cons: ['追加依存 (Vercel KV)', '実装複雑度UP']
+      }
+    ]
+  },
+  {
+    id: 'D4',
+    title: 'Notionカスタムエージェント活用範囲',
+    status: 'pending',
+    findings: '両R1が一致: 直接HTTPは不可→MCP必須。ネイティブSlack DM不可。催促の一斉送信はLLMにはアンチパターン（確定的処理なのにLLMを挟むのはコスト・信頼性の両面で不合理）。',
+    options: [
+      {
+        key: 'A',
+        name: '方針A: 限定利用',
+        recommended: true,
+        desc: 'DB横断検索・要約・例外検知のみ。LLMの強みが活きる場面に限定',
+        pros: ['LLMの強みを活かしつつリスク最小化', 'MCPサーバー不要で開発コスト削減', '確率的動作のリスクなし'],
+        cons: ['Agentの見栄えは弱い']
+      },
+      {
+        key: 'B',
+        name: '方針B: 積極利用',
+        recommended: false,
+        desc: 'MCP経由でCloud Run呼出、催促もAgent経由',
+        pros: ['「Notionエージェント」としてのデモ映え', '小笠原さんの「先進性」要求に応える'],
+        cons: ['MCPサーバー構築1-2週間', 'クレジットコスト', '確率的動作リスク']
+      }
+    ]
+  },
+  {
+    id: 'D5',
+    title: '管理画面（Notion DB構成）',
+    status: 'pending',
+    findings: '両R2がNotion DB管理画面を詳細設計。Gemini R2は7DB構成（全体設定/店舗/スタッフ/シフトパターン/必要人数/通知/特別日）、Claude R2は3DB構成（Global Config/Staff Master/Shift Requirements）。',
+    options: [
+      {
+        key: 'A',
+        name: '方針A: Gemini R2の7DB構成',
+        recommended: true,
+        desc: '全体設定 / 店舗 / スタッフ / シフトパターン / 必要人数 / 通知 / 特別日',
+        pros: ['awabar固有設計済み', 'Select型でバリデーション容易', '完全なモックアップ付き', '管理項目の分離が明確'],
+        cons: ['7DBは管理が複雑', 'API呼び出し回数増']
+      },
+      {
+        key: 'B',
+        name: '方針B: Claude R2の3DB構成',
+        recommended: false,
+        desc: 'Global Config / Staff Master / Shift Requirements',
+        pros: ['API呼び出し最小', 'シンプルな構成'],
+        cons: ['通知・特別日の管理が不足', '1DBに多くのプロパティが集中']
+      }
+    ]
+  },
+  {
+    id: 'D6',
+    title: '希望収集のインターフェース',
+    status: 'discussing',
+    findings: 'R2のSaaSベンチマークでは、らくしふのLINE連携が最も高い提出率。Slack対話は可能だがLINE優先が合理的。ただしawabarスタッフの実際のツール利用状況は未確認。',
+    note: '牛ノ浜さんヒアリング (2/28) で確認予定',
+    options: [
+      {
+        key: 'A',
+        name: '方針A: Slack DM',
+        recommended: false,
+        desc: '現行チャネルの延長',
+        pros: ['既存Slack Bot基盤あり', '追加構築少ない'],
+        cons: ['アルバイトのSlack利用率が不明']
+      },
+      {
+        key: 'B',
+        name: '方針B: LINE',
+        recommended: false,
+        desc: 'アルバイト向け最適',
+        pros: ['提出率最高 (らくしふ事例)', '全員利用済みのプラットフォーム'],
+        cons: ['LINE Messaging API構築必要', '新規開発コスト']
+      },
+      {
+        key: 'C',
+        name: '方針C: Notion直接入力',
+        recommended: false,
+        desc: '現行フロー維持',
+        pros: ['追加開発ゼロ', '即座に利用可能'],
+        cons: ['入力UX悪い', '提出率低い可能性']
+      }
+    ]
+  },
+  {
+    id: 'D7',
+    title: '催促ロジック',
+    status: 'resolved',
+    findings: 'コード調査(C4)で確認済み。Slack DM未実装だが2-4hで追加可能。Vercel CronまたはInngestステップで毎日チェック→未提出者にDM。',
+    resolvedText: 'Slack DM送信は未実装だが、Bolt.jsに2-4時間で追加可能。Vercel Cron（またはInngestステップ）で毎日チェックし、未提出者にDM送信するパターンで実装。',
+    options: []
+  },
+  {
+    id: 'D8',
+    title: 'イレギュラー対応',
+    status: 'pending',
+    findings: 'Claude R3は自動提案型のみ、Gemini R3は4段階エスカレーション（Tier1: 自動提案→Tier2: 自動打診→Tier3: ブロードキャスト→Tier4: 手動）。両者ともHuman-in-the-Loopが基本。',
+    options: [
+      {
+        key: 'A',
+        name: '方針A: MVP — 自動提案型のみ',
+        recommended: true,
+        desc: '候補リストをスコア付きで店長に提示→店長が選択→打診。3/10に間に合わせる',
+        pros: ['実装シンプル', '安全（店長承認必須）', '3/10デモ可能'],
+        cons: ['自動打診なし', '店長の手動操作が残る']
+      },
+      {
+        key: 'B',
+        name: '方針B: 4段階エスカレーション',
+        recommended: false,
+        desc: 'Tier1: 自動提案 → Tier2: 自動打診 → Tier3: ブロードキャスト → Tier4: 手動',
+        pros: ['完全自動化', 'タイムアウト制御', '段階的対応'],
+        cons: ['実装4-6週間', 'Cloud Tasks追加', '3/10に間に合わない']
+      }
+    ]
+  },
+  {
+    id: 'D9',
+    title: 'Notion版 vs スクラッチ版',
+    status: 'pending',
+    findings: '両R1が一致: ハイブリッドが最適解。Notionで不可能な部分（DM、リトライ、Block Kit）はスクラッチ補完。Notionは「見せる」層、スクラッチは「動かす」層として分担。',
+    options: [
+      {
+        key: 'A',
+        name: '方針A: ハイブリッド',
+        recommended: true,
+        desc: 'Notion: 状態管理UI・トリガー・DB横断検索。スクラッチ: Slack DM・催促・一斉通知・リトライ・監視',
+        pros: ['Notion UIのインタラクティブ性維持', 'スクラッチで信頼性確保', '段階的移行可能'],
+        cons: ['2つの技術スタックを管理']
+      },
+      {
+        key: 'B',
+        name: '方針B: スクラッチ中心',
+        recommended: false,
+        desc: 'Notionは表示のみ',
+        pros: ['完全制御', '信頼性最高'],
+        cons: ['Notion UIのインタラクティブ性を失う', '開発コスト増']
+      }
+    ]
+  },
+  {
+    id: 'D10',
+    title: '管理項目',
+    status: 'pending',
+    findings: 'Gemini R2が298→85項目を具体的にリスト化（9カテゴリ）。Claude R2はドメイン特化の洞察（スキル非代替性、ペアリング制約、イベントスパイク）。統合が最善。',
+    note: '牛ノ浜さんヒアリング (2/28) で現場確認予定',
+    options: [
+      {
+        key: 'A',
+        name: '方針: Gemini R2ベース + Claude R2統合',
+        recommended: true,
+        desc: 'Gemini R2の85項目をベースに、Claude R2のドメイン洞察（スキル非代替性、ペアリング制約、イベントスパイク）を統合',
+        pros: ['網羅性が高い', 'awabarドメイン特化の洞察を反映'],
+        cons: ['85項目の優先順位付けが必要', 'ヒアリングで現場フィルタリング必須']
+      }
+    ]
+  },
+  {
+    id: 'D11',
+    title: 'IF層抽象化（メッセージング）',
+    status: 'pending',
+    findings: '両R3がAdapter Pattern推奨。Claude R3はMCP併用も提案（定型: Adapter、対話: MCP）。Gemini R3はMCPは時期尚早と判断。',
+    options: [
+      {
+        key: 'A',
+        name: '方針A: Adapter Patternのみ',
+        recommended: true,
+        desc: 'NotificationSender interface → SlackAdapter → 将来LINEAdapter追加',
+        pros: ['シンプル', 'テスト容易', '枯れた技術', '将来のLINE対応も容易'],
+        cons: ['AIエージェント対話は別途実装']
+      },
+      {
+        key: 'B',
+        name: '方針B: Adapter + MCP併用',
+        recommended: false,
+        desc: '定型通知: Adapter、対話: MCP',
+        pros: ['将来性', 'AIエージェント自律対話'],
+        cons: ['MCP成熟度不足', '複雑度UP', '3/10に間に合わないリスク']
+      }
+    ]
+  },
+  {
+    id: 'D12',
+    title: 'リファクタリング範囲',
+    status: 'resolved',
+    findings: 'コード調査(C6)で確認済み。新規3-4ファイル+既存2ファイル修正。最小限。',
+    resolvedText: '新規3-4ファイル + 既存2ファイル修正。最小限のリファクタリングで既存コードベースとの統合が可能。',
+    options: []
+  }
+];
+
+const STORAGE_KEY = 'awabar-shift-decisions-v1';
+
+function loadDecisions() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveDecision(decisionId, optionKey) {
+  const decisions = loadDecisions();
+  if (decisions[decisionId] === optionKey) {
+    delete decisions[decisionId];
+  } else {
+    decisions[decisionId] = optionKey;
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(decisions));
+  updateProgress();
+  renderDecisions();
+}
+
+function updateProgress() {
+  const decisions = loadDecisions();
+  const resolvedCount = DECISIONS.filter(d => d.status === 'resolved').length;
+  const selectedCount = Object.keys(decisions).length;
+  const total = DECISIONS.length;
+  const decidedCount = resolvedCount + selectedCount;
+  document.getElementById('decidedCount').textContent = decidedCount;
+  document.getElementById('progressFill').style.width = ((decidedCount / total) * 100) + '%';
+}
+
+function toggleCard(cardId) {
+  const card = document.getElementById('card-' + cardId);
+  card.classList.toggle('expanded');
+}
+
+function statusLabel(status) {
+  switch (status) {
+    case 'resolved': return '<span class="status-badge status-resolved">解決済み</span>';
+    case 'pending': return '<span class="status-badge status-pending">要決定</span>';
+    case 'discussing': return '<span class="status-badge status-discussing">議論中</span>';
+    default: return '';
+  }
+}
+
+function renderDecisions() {
+  const container = document.getElementById('decisionsContainer');
+  const saved = loadDecisions();
+
+  container.innerHTML = DECISIONS.map(d => {
+    const isExpanded = document.getElementById('card-' + d.id)?.classList.contains('expanded') || false;
+    const isDecided = d.status === 'resolved' || saved[d.id];
+    const expandedClass = isExpanded ? ' expanded' : '';
+    const decidedClass = isDecided ? ' decided' : '';
+
+    let bodyHtml = '';
+    bodyHtml += '<div class="decision-content">';
+    bodyHtml += '<div class="findings"><div class="findings-label">何がわかったか</div>';
+    bodyHtml += '<p>' + d.findings + '</p></div>';
+
+    if (d.status === 'resolved' && d.resolvedText) {
+      bodyHtml += '<div class="resolved-content">' + d.resolvedText + '</div>';
+    }
+
+    if (d.options.length > 0) {
+      bodyHtml += '<div class="options-label">方針案</div>';
+      d.options.forEach(opt => {
+        const isSelected = saved[d.id] === opt.key;
+        const selectedClass = isSelected ? ' selected' : '';
+        const recommendedClass = opt.recommended ? ' recommended' : '';
+
+        let prosConsHtml = '';
+        if (opt.pros.length > 0 || opt.cons.length > 0) {
+          prosConsHtml = '<div class="pros-cons">';
+          if (opt.pros.length > 0) {
+            prosConsHtml += '<div class="pros"><div class="pros-label">Merit</div><ul>' + opt.pros.map(p => '<li>' + p + '</li>').join('') + '</ul></div>';
+          }
+          if (opt.cons.length > 0) {
+            prosConsHtml += '<div class="cons"><div class="cons-label">Demerit</div><ul>' + opt.cons.map(c => '<li>' + c + '</li>').join('') + '</ul></div>';
+          }
+          prosConsHtml += '</div>';
+        }
+
+        bodyHtml += '<div class="option-card' + selectedClass + recommendedClass + '">';
+        bodyHtml += '<div class="option-header"><span class="option-name">' + opt.name + '</span>';
+        if (opt.recommended) bodyHtml += '<span class="recommend-badge">推奨</span>';
+        bodyHtml += '<span class="selected-badge">決定済み</span></div>';
+        bodyHtml += '<div class="option-desc">' + opt.desc + '</div>';
+        bodyHtml += prosConsHtml;
+        bodyHtml += '<button class="select-btn" onclick="event.stopPropagation(); saveDecision(\'' + d.id + '\', \'' + opt.key + '\')">' + (isSelected ? '選択を解除' : 'この方針を選択') + '</button>';
+        bodyHtml += '</div>';
+      });
+    }
+
+    if (d.note) {
+      bodyHtml += '<div class="note-block">' + d.note + '</div>';
+    }
+
+    bodyHtml += '</div>';
+
+    return '<div class="decision-card' + expandedClass + decidedClass + '" id="card-' + d.id + '">' +
+      '<div class="decision-header" onclick="toggleCard(\'' + d.id + '\')">' +
+      '<span class="decision-number">' + d.id + '</span>' +
+      '<span class="decision-title">' + d.title + '</span>' +
+      statusLabel(d.status) +
+      '<span class="expand-icon">&#9660;</span>' +
+      '</div>' +
+      '<div class="decision-body">' + bodyHtml + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function exportDecisions() {
+  const saved = loadDecisions();
+  let md = '# awabar シフトエージェント 設計意思決定\n\n';
+  md += '日付: 2026-02-27\n\n---\n\n';
+
+  DECISIONS.forEach(d => {
+    const statusMap = { resolved: '解決済み', pending: '要決定', discussing: '議論中' };
+    let statusText = statusMap[d.status] || d.status;
+    md += '## ' + d.id + ': ' + d.title + ' [' + statusText + ']\n\n';
+    md += '**知見:** ' + d.findings + '\n\n';
+
+    if (d.status === 'resolved' && d.resolvedText) {
+      md += '**結論:** ' + d.resolvedText + '\n\n';
+    }
+
+    if (d.options.length > 0) {
+      const selectedKey = saved[d.id];
+      d.options.forEach(opt => {
+        const marker = selectedKey === opt.key ? ' **[決定]**' : (opt.recommended ? ' (推奨)' : '');
+        md += '- ' + opt.name + marker + ': ' + opt.desc + '\n';
+        if (opt.pros.length > 0) md += '  - Merit: ' + opt.pros.join('、') + '\n';
+        if (opt.cons.length > 0) md += '  - Demerit: ' + opt.cons.join('、') + '\n';
+      });
+      md += '\n';
+    }
+    if (d.note) md += '> ' + d.note + '\n\n';
+    md += '---\n\n';
+  });
+
+  const selectedEntries = Object.entries(saved);
+  if (selectedEntries.length > 0) {
+    md += '## 決定サマリ\n\n';
+    selectedEntries.forEach(([dId, optKey]) => {
+      const decision = DECISIONS.find(dd => dd.id === dId);
+      const option = decision?.options.find(o => o.key === optKey);
+      if (decision && option) {
+        md += '- **' + dId + ' ' + decision.title + '**: ' + option.name + '\n';
+      }
+    });
+    md += '\n';
+  }
+
+  navigator.clipboard.writeText(md).then(() => {
+    const btn = document.getElementById('exportBtn');
+    btn.textContent = 'コピー完了';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '全決定をエクスポート'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    const textarea = document.createElement('textarea');
+    textarea.value = md;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    const btn = document.getElementById('exportBtn');
+    btn.textContent = 'コピー完了';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '全決定をエクスポート'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+renderDecisions();
+updateProgress();
+</script>
+
+</body>
+</html>

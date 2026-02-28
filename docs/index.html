@@ -15,21 +15,121 @@ body>*:not(#auth-gate){display:none!important}
 </style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>awabar シフトエージェント ドキュメント</title>
+<title>副店長Buddy — プロジェクトポータル</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-.container { max-width: 480px; width: 100%; padding: 2rem; }
-h1 { font-size: 1.4rem; margin-bottom: 0.5rem; color: #fff; }
-.sub { color: #888; font-size: 0.85rem; margin-bottom: 2rem; }
-.links { display: flex; flex-direction: column; gap: 1rem; }
-a { display: block; padding: 1.2rem 1.5rem; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; text-decoration: none; color: #e0e0e0; transition: all 0.2s; }
-a:hover { background: #222; border-color: #555; }
-a .title { font-size: 1rem; font-weight: 600; color: #fff; }
-a .desc { font-size: 0.8rem; color: #888; margin-top: 0.3rem; }
+:root {
+  --bg: #0c0e14; --bg2: #12151f; --bg3: #181c28; --bg4: #1e2233; --bg5: #252a3a;
+  --tx: #e4e2df; --tx2: #9ca3af; --tx3: #6b7280;
+  --accent: #f59e0b; --accent2: #d97706;
+  --green: #10b981; --green2: #065f46;
+  --red: #ef4444; --blue: #3b82f6; --blue2: #1e3a5f;
+  --purple: #a78bfa; --cyan: #22d3ee;
+  --border: #1e2233;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Kaku Gothic ProN',sans-serif;background:var(--bg);color:var(--tx);line-height:1.7}
+.container{max-width:880px;margin:0 auto;padding:0 1.5rem}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Nav */
+.topnav{position:sticky;top:0;z-index:100;background:rgba(12,14,20,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0.5rem 0}
+.topnav-inner{display:flex;align-items:center;justify-content:space-between;max-width:880px;margin:0 auto;padding:0 1.5rem}
+.topnav .logo{font-size:0.85rem;font-weight:700;color:var(--tx)}
+.topnav .links{display:flex;gap:0.2rem}
+.topnav .links a{color:var(--tx3);font-size:0.78rem;padding:0.35rem 0.7rem;border-radius:5px;text-decoration:none;transition:all 0.2s}
+.topnav .links a:hover{background:var(--bg4);color:var(--tx)}
+
+/* Hero */
+.hero{padding:3.5rem 0 2rem;border-bottom:1px solid var(--border)}
+.hero h1{font-size:1.8rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.3rem}
+.hero .sub{color:var(--tx2);font-size:0.95rem;margin-bottom:1.5rem}
+
+/* Now section */
+.now{background:linear-gradient(135deg,rgba(245,158,11,0.06),rgba(245,158,11,0.01));border:1px solid rgba(245,158,11,0.15);border-radius:12px;padding:1.5rem;margin:1.5rem 0}
+.now h2{font-size:1rem;color:var(--accent);margin-bottom:0.8rem;display:flex;align-items:center;gap:0.5rem}
+.now h2::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.now-items{list-style:none}
+.now-items li{padding:0.4rem 0;font-size:0.9rem;display:flex;align-items:flex-start;gap:0.6rem}
+.now-items li::before{content:'→';color:var(--accent);flex-shrink:0;margin-top:0.05rem}
+.now-items .date{color:var(--tx3);font-size:0.78rem;flex-shrink:0;width:40px}
+
+/* Story */
+.story{padding:2rem 0;border-bottom:1px solid var(--border)}
+.story h2{font-size:1.2rem;font-weight:700;margin-bottom:1rem}
+.story-text{color:var(--tx2);font-size:0.9rem}
+.story-text p+p{margin-top:0.8rem}
+.story-text strong{color:var(--tx)}
+.story-text .highlight{color:var(--accent)}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0.8rem;margin:1.5rem 0}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center}
+.stat .num{font-size:1.5rem;font-weight:700}
+.stat .label{font-size:0.7rem;color:var(--tx3);margin-top:0.15rem}
+.stat.s1 .num{color:var(--green)}
+.stat.s2 .num{color:var(--accent)}
+.stat.s3 .num{color:var(--blue)}
+.stat.s4 .num{color:var(--purple)}
+
+/* Timeline */
+.timeline{padding:2rem 0;border-bottom:1px solid var(--border)}
+.timeline h2{font-size:1.2rem;font-weight:700;margin-bottom:1.2rem}
+.tl-entry{display:flex;gap:1rem;padding:1.2rem 0;border-bottom:1px solid var(--border)}
+.tl-entry:last-child{border-bottom:none}
+.tl-date{flex-shrink:0;width:56px;text-align:right}
+.tl-date .day{font-size:1.1rem;font-weight:700;color:var(--tx)}
+.tl-date .month{font-size:0.7rem;color:var(--tx3)}
+.tl-dot{flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding-top:0.35rem}
+.tl-dot-circle{width:10px;height:10px;border-radius:50%;border:2px solid var(--border)}
+.tl-dot-circle.latest{border-color:var(--accent);background:var(--accent)}
+.tl-dot-line{flex:1;width:2px;background:var(--border);margin-top:0.3rem}
+.tl-content{flex:1;min-width:0}
+.tl-content h3{font-size:0.95rem;font-weight:600;margin-bottom:0.3rem}
+.tl-content p{font-size:0.82rem;color:var(--tx2)}
+.tl-links{display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.5rem}
+.tl-link{display:inline-flex;align-items:center;gap:0.3rem;font-size:0.75rem;padding:0.25rem 0.6rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--tx2);text-decoration:none;transition:all 0.2s}
+.tl-link:hover{background:var(--bg4);color:var(--tx);border-color:var(--accent);text-decoration:none}
+.tl-link .icon{font-size:0.7rem}
+
+/* Library */
+.library{padding:2rem 0}
+.library h2{font-size:1.2rem;font-weight:700;margin-bottom:1.2rem}
+.lib-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0.8rem}
+.lib-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.2rem;transition:all 0.2s;text-decoration:none;color:var(--tx)}
+.lib-card:hover{border-color:var(--accent);background:var(--bg3);text-decoration:none}
+.lib-card .cat{font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;padding:0.15rem 0.5rem;border-radius:3px;display:inline-block;margin-bottom:0.5rem}
+.cat-report{background:#1e3a5f;color:var(--blue)}
+.cat-design{background:#4c1d95;color:var(--purple)}
+.cat-hearing{background:rgba(245,158,11,0.15);color:var(--accent)}
+.cat-research{background:var(--green2);color:var(--green)}
+.cat-prototype{background:#4a2030;color:#f472b6}
+.lib-card h3{font-size:0.92rem;font-weight:600;margin-bottom:0.25rem}
+.lib-card p{font-size:0.78rem;color:var(--tx3)}
+
+/* Stakeholders */
+.people{display:grid;grid-template-columns:repeat(3,1fr);gap:0.6rem;margin-top:1rem}
+.person{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:0.8rem;font-size:0.82rem}
+.person .name{font-weight:600;color:var(--tx)}
+.person .role{color:var(--tx3);font-size:0.75rem}
+
+/* Footer */
+.footer{padding:2rem 0;text-align:center;border-top:1px solid var(--border)}
+.footer p{font-size:0.78rem;color:var(--tx3)}
+
+@media(max-width:640px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .lib-grid{grid-template-columns:1fr}
+  .people{grid-template-columns:1fr}
+  .tl-date{width:44px}
+  h1{font-size:1.4rem}
+}
 </style>
 </head>
 <body>
+
 <div id="auth-gate">
 <div class="box">
 <h1>パスワードを入力してください</h1>
@@ -62,23 +162,222 @@ document.getElementById("auth-pw").focus();
 });
 })();
 </script>
-<div class="container">
-  <h1>awabar シフトエージェント</h1>
-  <p class="sub">ドキュメント一覧</p>
-  <div class="links">
-    <a href="analysis.html">
-      <div class="title">ヒアリング分析 ★NEW</div>
-      <div class="desc">想定と現実のGAP、10の発見、7つの判断、これから作るもの</div>
-    </a>
-    <a href="briefing.html">
-      <div class="title">設計ブリーフィング</div>
-      <div class="desc">システム全体像・設計方針・技術選定の説明資料</div>
-    </a>
-    <a href="hearing.html">
-      <div class="title">牛ノ浜さんヒアリング資料</div>
-      <div class="desc">2/28 現場ヒアリング用 — 現状→エージェント化→GAP質問</div>
-    </a>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="logo">副店長Buddy</div>
+    <div class="links">
+      <a href="#now">今やること</a>
+      <a href="#story">あらすじ</a>
+      <a href="#timeline">タイムライン</a>
+      <a href="#library">資料</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="container">
+    <h1>副店長Buddy</h1>
+    <p class="sub">awabar シフトエージェント — プロジェクトポータル</p>
+
+    <div class="stats">
+      <div class="stat s1"><div class="num">12/12</div><div class="label">設計決定</div></div>
+      <div class="stat s2"><div class="num">10</div><div class="label">現場発見</div></div>
+      <div class="stat s3"><div class="num">13日</div><div class="label">MVP完成まで</div></div>
+      <div class="stat s4"><div class="num">4月</div><div class="label">実戦投入</div></div>
+    </div>
   </div>
 </div>
+
+<!-- Now -->
+<div class="container" id="now">
+  <div class="now">
+    <h2>今やること</h2>
+    <ul class="now-items">
+      <li><span class="date">3/1〜</span>MVP実装開始 — 実装パッケージを作成し、開発着手</li>
+      <li><span class="date">並行</span>シフト生成バグ修正（2個同時生成・希望外配置・職種ミスマッチ）</li>
+      <li><span class="date">並行</span>表示形式改善（時間帯→名前表示、メールアドレス→名前）</li>
+      <li><span class="date">3/10</span>大竹さん報告</li>
+      <li><span class="date">3/13</span>小笠原さんデモ — 「ほっといてもシフトが組まれる」体験を見せる</li>
+      <li><span class="date">3/15</span>4月シフトでエージェント実戦投入</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Story -->
+<section class="story" id="story">
+<div class="container">
+  <h2>あらすじ</h2>
+  <div class="story-text">
+    <p>
+      2025年からawabar向けにシフト最適化（OR-Tools）、売上管理（スマレジ連携）、Slackチャットボットを開発。究極ビジョンは「場の計算機」— バーという"場"の価値を最大化するAI。
+    </p>
+    <p>
+      <strong>2026年2月26日</strong>、小笠原さんへの報告会で転機。<span class="highlight">「まずシフトが組めるエージェントであることが土台」</span>という指摘を受け、方針転換。シフト最適化の"精度"を追うのではなく、<strong>シフト業務を丸ごと自動化するエージェント</strong>を作ることが最優先に。
+    </p>
+    <p>
+      そこから2日間でAS-IS調査（既存コード2リポジトリ読破）、DeepResearch 6本（Claude×3 + Gemini×3）を実施し、<strong>設計方針12論点を全決定</strong>。Inngestによるワークフロー自動化、Notion 7DB、Slack DM、Adapter Patternなどの技術選定を完了。
+    </p>
+    <p>
+      <strong>2026年2月28日</strong>、福岡店長の牛ノ浜さんにヒアリング実施。<span class="highlight">我々が想定していた「催促が大変」ではなく、「シフト生成後の穴埋めが地獄」</span>だと判明。全スタッフに個別DMで「ここ入れない？」と聞きまくる作業が毎月3日間を食っていた。グループに投げても誰も反応しない。1対1でないと動かない。
+    </p>
+    <p>
+      さらに、スタッフ側からの能動的な「空き枠くれ」ニーズ、公平性の不満（「めっちゃ出したのにあの子と一緒」）、スキルvs意欲のジレンマなど、<strong>10の現場発見</strong>を獲得。牛ノ浜さんの反応は極めてポジティブで、<strong>4月シフトからエージェントを使いたい</strong>と合意。
+    </p>
+    <p>
+      分析の結果、<strong>MVPスコープは変更せず</strong>、現場知見はPhase 2の設計資産として保持する方針に。まずは「ほっといてもシフトが集まって組まれる」体験を3/13までに完成させ、小笠原さんにデモする。
+    </p>
+  </div>
+</div>
+</section>
+
+<!-- Timeline -->
+<section class="timeline" id="timeline">
+<div class="container">
+  <h2>タイムライン</h2>
+
+  <div class="tl-entry">
+    <div class="tl-date"><div class="day">28</div><div class="month">2月</div></div>
+    <div class="tl-dot"><div class="tl-dot-circle latest"></div><div class="tl-dot-line"></div></div>
+    <div class="tl-content">
+      <h3>牛ノ浜ヒアリング実施 + 分析完了</h3>
+      <p>33分のヒアリングから10の発見と7つの意思決定項目を抽出。最大のペインは「生成後の穴埋め」と判明。MVPスコープは維持、バグ修正+表示改善のみ並行対応。エージェントへの反応は極めてポジティブ。</p>
+      <div class="tl-links">
+        <a href="analysis.html" class="tl-link"><span class="icon">&#9632;</span> ヒアリング分析</a>
+        <a href="hearing.html" class="tl-link"><span class="icon">&#9632;</span> ヒアリング資料</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="tl-entry">
+    <div class="tl-date"><div class="day">28</div><div class="month">2月</div></div>
+    <div class="tl-dot"><div class="tl-dot-circle latest"></div><div class="tl-dot-line"></div></div>
+    <div class="tl-content">
+      <h3>設計ブリーフィング作成 + D6 Slack確定</h3>
+      <p>チーム共有用の設計ブリーフィングを作成。Before/After、月次サイクル、アーキテクチャ、技術アナロジー、7DB設計、FAQ。D6はSlack DMで確定（スタッフが既にSlack利用中）。</p>
+      <div class="tl-links">
+        <a href="briefing.html" class="tl-link"><span class="icon">&#9632;</span> 設計ブリーフィング</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="tl-entry">
+    <div class="tl-date"><div class="day">27</div><div class="month">2月</div></div>
+    <div class="tl-dot"><div class="tl-dot-circle"></div><div class="tl-dot-line"></div></div>
+    <div class="tl-content">
+      <h3>設計12論点 全決定</h3>
+      <p>DeepResearch 6本（R1-R3 × Claude/Gemini、計2,157行）を受入完了。設計意思決定ダッシュボードを作成し、12論点を全て決定。Inngest / Notion Select+Inngest / 7DB / Slack DM / Adapter Pattern / ハイブリッドアーキテクチャ。</p>
+      <div class="tl-links">
+        <a href="decisions.html" class="tl-link"><span class="icon">&#9632;</span> 意思決定ダッシュボード</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="tl-entry">
+    <div class="tl-date"><div class="day">27</div><div class="month">2月</div></div>
+    <div class="tl-dot"><div class="tl-dot-circle"></div><div class="tl-dot-line"></div></div>
+    <div class="tl-content">
+      <h3>AS-IS調査完了 + DeepResearch 6本受入</h3>
+      <p>awbacf（TypeScript/Notion）+ scheduling（Python/OR-Tools）の2リポジトリを調査。並行してR1（Notionエージェント制約）、R2（SaaSベンチマーク+DB設計）、R3（アーキテクチャ）のDeepResearchを実施。Claude/Geminiともに「Inngest推奨」で一致。</p>
+    </div>
+  </div>
+
+  <div class="tl-entry">
+    <div class="tl-date"><div class="day">26</div><div class="month">2月</div></div>
+    <div class="tl-dot"><div class="tl-dot-circle"></div><div class="tl-dot-line"></div></div>
+    <div class="tl-content">
+      <h3>2月報告会 → 方針転換</h3>
+      <p>小笠原さんへの報告会を実施。「まずシフトが組めるエージェントであることが土台」という指摘を受け、方針転換。シフト最適化の精度追求から、シフト業務の全自動化（エージェント化）へ。プロダクトUIプロトタイプも披露。</p>
+      <div class="tl-links">
+        <a href="report.html" class="tl-link"><span class="icon">&#9632;</span> 2月報告プレゼン</a>
+        <a href="prototype.html" class="tl-link"><span class="icon">&#9632;</span> プロダクトプロトタイプ</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="tl-entry">
+    <div class="tl-date"><div class="day">22</div><div class="month">1月</div></div>
+    <div class="tl-dot"><div class="tl-dot-circle"></div><div class="tl-dot-line"></div></div>
+    <div class="tl-content">
+      <h3>1月報告会 → プロジェクト継続決定</h3>
+      <p>報告会を実施し、プロジェクトの継続が決定。費用正当性説明資料も作成（1/30）。</p>
+    </div>
+  </div>
+
+  <div class="tl-entry">
+    <div class="tl-date"><div class="day"></div><div class="month">2025</div></div>
+    <div class="tl-dot"><div class="tl-dot-circle"></div></div>
+    <div class="tl-content">
+      <h3>基盤構築フェーズ</h3>
+      <p>シフト最適化（OR-Tools）、売上管理（スマレジ連携）、Slackチャットボット実装。「場の計算機」ビジョン策定、3年ロードマップ策定。</p>
+    </div>
+  </div>
+
+</div>
+</section>
+
+<!-- Library -->
+<section class="library" id="library">
+<div class="container">
+  <h2>資料ライブラリ</h2>
+
+  <div class="lib-grid">
+    <a href="analysis.html" class="lib-card">
+      <span class="cat cat-hearing">ヒアリング</span>
+      <h3>牛ノ浜ヒアリング分析</h3>
+      <p>2/28 — 想定vs現実、10の発見、7つの判断、ロードマップ</p>
+    </a>
+
+    <a href="hearing.html" class="lib-card">
+      <span class="cat cat-hearing">ヒアリング</span>
+      <h3>牛ノ浜ヒアリング資料</h3>
+      <p>2/28 — 現状フロー→エージェント化→GAP質問12問</p>
+    </a>
+
+    <a href="briefing.html" class="lib-card">
+      <span class="cat cat-design">設計</span>
+      <h3>設計ブリーフィング</h3>
+      <p>2/28 — 全体像・Before/After・月次サイクル・技術選定</p>
+    </a>
+
+    <a href="decisions.html" class="lib-card">
+      <span class="cat cat-design">設計</span>
+      <h3>意思決定ダッシュボード</h3>
+      <p>2/27 — 12論点の選択肢・根拠・決定状態</p>
+    </a>
+
+    <a href="report.html" class="lib-card">
+      <span class="cat cat-report">報告</span>
+      <h3>2月報告プレゼン</h3>
+      <p>2/26 — 小笠原さん向け11スライド + Appendix</p>
+    </a>
+
+    <a href="prototype.html" class="lib-card">
+      <span class="cat cat-prototype">プロダクト</span>
+      <h3>プロダクトUIプロトタイプ</h3>
+      <p>2/26 — シフト最適化プロダクトビジョンのUI</p>
+    </a>
+  </div>
+
+  <!-- Stakeholders -->
+  <h3 style="margin-top:2rem;font-size:1rem;margin-bottom:0.3rem;">関係者</h3>
+  <div class="people">
+    <div class="person"><div class="name">小笠原 治</div><div class="role">awabarオーナー / さくらインターネット共同創業者</div></div>
+    <div class="person"><div class="name">小竹</div><div class="role">PM / コンセプト設計</div></div>
+    <div class="person"><div class="name">谷津田</div><div class="role">開発者</div></div>
+    <div class="person"><div class="name">牛ノ浜</div><div class="role">福岡店店長 / 現場ユーザー</div></div>
+    <div class="person"><div class="name">ペりん</div><div class="role">R&Dリード</div></div>
+    <div class="person"><div class="name">大竹 / 浅田</div><div class="role">クロステック / 定例参加</div></div>
+  </div>
+</div>
+</section>
+
+<div class="footer">
+  <div class="container">
+    <p>副店長Buddy — awabar シフトエージェント<br>最終更新: 2026/02/28</p>
+  </div>
+</div>
+
 </body>
 </html>

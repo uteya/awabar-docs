@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<style id="auth-gate-style">
+body>*:not(#auth-gate){display:none!important}
+#auth-gate{display:flex!important;position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;z-index:99999;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#auth-gate .box{max-width:340px;width:100%;padding:2rem;text-align:center}
+#auth-gate h1{font-size:1.1rem;color:#fff;margin-bottom:1.5rem;font-weight:500}
+#auth-gate input{width:100%;padding:.65rem 1rem;background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#fff;font-size:1rem;outline:none;margin-bottom:.6rem}
+#auth-gate input:focus{border-color:#666}
+#auth-gate button{width:100%;padding:.65rem;background:#fff;color:#000;border:none;border-radius:6px;font-size:.9rem;font-weight:600;cursor:pointer}
+#auth-gate button:hover{background:#ddd}
+#auth-gate .err{color:#f44;font-size:.8rem;margin-top:.5rem;visibility:hidden}
+#auth-gate .err.show{visibility:visible}
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>副店長Buddy — 2月報告</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f14;
+  --surface: #1a1a24;
+  --surface-2: #24243a;
+  --ink: #e8e8f0;
+  --ink-muted: #8888a0;
+  --accent: #4a9eff;
+  --accent-soft: rgba(74,158,255,0.12);
+  --green: #34d399;
+  --green-soft: rgba(52,211,153,0.12);
+  --orange: #f59e0b;
+  --orange-soft: rgba(245,158,11,0.12);
+  --purple: #a78bfa;
+  --purple-soft: rgba(167,139,250,0.12);
+  --red: #f87171;
+  --red-soft: rgba(248,113,113,0.12);
+  --font: 'Noto Sans JP', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--ink); line-height: 1.7; overflow-x: hidden; }
+
+.slide { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 56px 80px; position: relative; }
+.slide + .slide { border-top: 1px solid rgba(255,255,255,0.04); }
+.slide.appendix { min-height: auto; padding: 48px 80px; }
+.slide.appendix + .slide.appendix { border-top: 1px solid rgba(255,255,255,0.04); }
+
+h1 { font-size: 2.8rem; font-weight: 900; line-height: 1.2; margin-bottom: 16px; }
+h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 28px; color: var(--accent); }
+h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; }
+h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 8px; color: var(--ink-muted); }
+p { font-size: 1rem; color: var(--ink-muted); margin-bottom: 14px; }
+.big { font-size: 1.3rem; color: var(--ink); }
+.muted { color: var(--ink-muted); }
+.accent { color: var(--accent); }
+.green { color: var(--green); }
+.orange { color: var(--orange); }
+.purple { color: var(--purple); }
+.subtitle { font-size: 1.1rem; color: var(--ink-muted); margin-bottom: 48px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+.card { background: var(--surface); border-radius: 12px; padding: 24px 28px; border: 1px solid rgba(255,255,255,0.06); }
+.card h3 { margin-bottom: 14px; }
+
+.tag { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; margin-right: 6px; margin-bottom: 6px; }
+.tag-green { background: var(--green-soft); color: var(--green); }
+.tag-orange { background: var(--orange-soft); color: var(--orange); }
+.tag-purple { background: var(--purple-soft); color: var(--purple); }
+.tag-accent { background: var(--accent-soft); color: var(--accent); }
+.tag-red { background: var(--red-soft); color: var(--red); }
+
+table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.9rem; }
+th { color: var(--ink-muted); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+td { color: var(--ink); }
+tr:last-child td { border-bottom: none; }
+
+.sprint-flow { display: flex; gap: 0; align-items: stretch; margin: 24px 0; }
+.sprint-step { flex: 1; padding: 20px; background: var(--surface); position: relative; }
+.sprint-step:first-child { border-radius: 12px 0 0 12px; }
+.sprint-step:last-child { border-radius: 0 12px 12px 0; }
+.sprint-step + .sprint-step { border-left: 2px solid var(--accent); }
+.sprint-num { font-size: 0.72rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+.sprint-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; }
+.sprint-result { font-size: 0.82rem; color: var(--ink-muted); margin-bottom: 8px; }
+.sprint-pivot { font-size: 0.82rem; color: var(--orange); font-weight: 600; }
+.sprint-arrive { font-size: 0.82rem; color: var(--green); font-weight: 600; }
+
+.timeline { position: relative; padding-left: 32px; }
+.timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--accent), var(--purple)); }
+.timeline-item { position: relative; margin-bottom: 24px; }
+.timeline-item::before { content: ''; position: absolute; left: -28px; top: 8px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); }
+.timeline-item.future::before { background: var(--purple); }
+.timeline-date { font-size: 0.78rem; color: var(--accent); font-weight: 700; margin-bottom: 4px; }
+.timeline-item.future .timeline-date { color: var(--purple); }
+.timeline-text { font-size: 0.95rem; color: var(--ink); }
+.timeline-sub { font-size: 0.82rem; color: var(--ink-muted); }
+
+.discussion-item { background: var(--surface); border-radius: 12px; padding: 20px 24px; margin-bottom: 14px; border-left: 3px solid var(--accent); }
+.discussion-item p { color: var(--ink); font-size: 1rem; margin: 0; }
+
+/* Flow diagram */
+.flow { display: flex; align-items: center; gap: 0; margin: 24px 0; }
+.flow-step { flex: 1; text-align: center; padding: 20px 16px; background: var(--surface); position: relative; }
+.flow-step:first-child { border-radius: 12px 0 0 12px; }
+.flow-step:last-child { border-radius: 0 12px 12px 0; }
+.flow-arrow { width: 36px; flex-shrink: 0; text-align: center; color: var(--accent); font-size: 1.2rem; }
+.flow-label { font-size: 0.75rem; color: var(--ink-muted); margin-bottom: 6px; font-weight: 500; }
+.flow-title { font-size: 0.9rem; font-weight: 700; color: var(--ink); }
+.flow-desc { font-size: 0.78rem; color: var(--ink-muted); margin-top: 4px; }
+
+/* 3-vector diagram */
+.vector-diagram { display: flex; align-items: center; justify-content: center; gap: 40px; margin: 32px 0; }
+.vector-circle {
+  width: 160px; height: 160px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  text-align: center; font-weight: 700; font-size: 0.9rem; line-height: 1.4; position: relative;
+}
+.vector-circle.v1 { background: rgba(74,158,255,0.15); border: 2px solid var(--accent); color: var(--accent); }
+.vector-circle.v2 { background: rgba(52,211,153,0.15); border: 2px solid var(--green); color: var(--green); }
+.vector-circle.v3 { background: rgba(167,139,250,0.15); border: 2px solid var(--purple); color: var(--purple); }
+.vector-center {
+  width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  text-align: center; font-weight: 900; font-size: 0.85rem; line-height: 1.3;
+  background: rgba(245,158,11,0.15); border: 2px solid var(--orange); color: var(--orange);
+  margin: -20px;
+}
+
+.slide-num { position: absolute; bottom: 20px; right: 40px; font-size: 0.75rem; color: rgba(255,255,255,0.12); }
+.appendix-label { font-size: 0.75rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+
+/* Page nav */
+.page-nav { position: fixed; right: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; z-index: 100; }
+.page-nav a { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.12); display: block; transition: background 0.2s; }
+.page-nav a:hover, .page-nav a.active { background: var(--accent); }
+
+@media print {
+  .slide { page-break-after: always; min-height: auto; padding: 36px; }
+  .page-nav { display: none; }
+  body { background: #fff; color: #111; }
+  .card { border: 1px solid #ddd; }
+  h2 { color: #2563eb; }
+}
+</style>
+</head>
+<body>
+<div id="auth-gate">
+<div class="box">
+<h1>パスワードを入力してください</h1>
+<form id="auth-form">
+<input type="password" id="auth-pw" placeholder="パスワード" autofocus required>
+<button type="submit">入る</button>
+</form>
+<p class="err" id="auth-err">パスワードが違います</p>
+</div>
+</div>
+<script>
+(function(){
+var K="awabar-docs-auth";
+if(sessionStorage.getItem(K)==="ok"){
+document.getElementById("auth-gate").remove();
+document.getElementById("auth-gate-style").remove();
+return;
+}
+document.getElementById("auth-form").addEventListener("submit",function(e){
+e.preventDefault();
+if(document.getElementById("auth-pw").value==="nikarasu"){
+sessionStorage.setItem(K,"ok");
+document.getElementById("auth-gate").remove();
+document.getElementById("auth-gate-style").remove();
+}else{
+document.getElementById("auth-err").classList.add("show");
+document.getElementById("auth-pw").value="";
+document.getElementById("auth-pw").focus();
+}
+});
+})();
+</script>
+
+<nav class="page-nav" id="pageNav"></nav>
+
+<!-- ===== S1: Title ===== -->
+<section class="slide" id="s1">
+  <div>
+    <p class="muted" style="font-size:0.9rem; margin-bottom:8px;">株式会社にからす</p>
+    <h1>副店長Buddy<br><span class="accent">2月 進捗報告</span></h1>
+    <p class="subtitle">2026年2月26日</p>
+  </div>
+</section>
+
+<!-- ===== S2: Conclusion ===== -->
+<section class="slide" id="s2">
+  <h2>結論</h2>
+  <p class="big" style="max-width:820px; line-height:1.9;">
+    <strong style="color:var(--green); font-size:1.4rem;">「売上が上がるシフト」を組めるサービスの原型が完成。</strong>
+  </p>
+  <p class="big" style="max-width:820px; margin-top:20px;">
+    3回のスプリントで仮説→検証→ピボットを繰り返し、<br>
+    <strong>「売上予測 × スキルベース × 数理最適化 × LLM」</strong>のアーキテクチャに到達。
+  </p>
+  <p style="max-width:820px; margin-top:14px; font-size:1.05rem;">
+    属人性を排除し「スキル」で抽象化したことで、<strong class="accent">他店舗への横展開が可能な設計</strong>になっています。<br>
+    <span class="muted">ターゲット: awabarのように従業員が集客・単価に直接影響する、高接客の飲食店。</span>
+  </p>
+</section>
+
+<!-- ===== S3: What is a good shift? ===== -->
+<section class="slide" id="s3">
+  <h2>「良いシフト」とは何か</h2>
+  <p class="big" style="margin-bottom:8px;">飲食店のシフトには<strong>3つのベクトル</strong>がある。</p>
+  <p class="muted" style="margin-bottom:28px;">どれか1つだけを最適化してもダメで、そのちょうどいいトレードオフが求められる。<br>現在、店長はこの難しいバランスを<strong style="color:var(--ink);">経験と勘（言語化できない直感）</strong>で決めている。</p>
+
+  <div class="grid-3" style="margin-bottom:32px;">
+    <div class="card" style="border-top:3px solid var(--accent); text-align:center;">
+      <h3 class="accent" style="font-size:1.2rem;">短期: 売上</h3>
+      <p style="font-size:0.9rem;">「客を呼べる人」「単価を上げられる人」を<br>正しい日に配置する</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--green); text-align:center;">
+      <h3 class="green" style="font-size:1.2rem;">中期: 教育</h3>
+      <p style="font-size:0.9rem;">スキルを持つ人と持たない人を<br>一緒に入れてOJTで育てる</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple); text-align:center;">
+      <h3 class="purple" style="font-size:1.2rem;">従業員満足</h3>
+      <p style="font-size:0.9rem;">希望が満たされる、<br>一緒に働きたい人と入れる</p>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--orange);">
+    <p style="margin:0; font-size:1rem; color:var(--ink);">
+      <strong class="orange">私たちのツールが支援するのは、この意思決定。</strong><br>
+      数理最適化がスキル充足ベースのシフトを生成し、LLMが教育・満足の観点でアドバイス。<br>
+      店長はそれを見ながら最終判断を下す。<strong>直感を否定するのではなく、直感を支えるデータと提案を出す。</strong>
+    </p>
+  </div>
+</section>
+
+<!-- ===== S4: Our Hypothesis ===== -->
+<section class="slide" id="s4">
+  <h2>私たちの仮説 — シフトで売上は上がるのか？</h2>
+
+  <div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom:20px; border-left:3px solid var(--accent);">
+        <h3>仮説</h3>
+        <p style="font-size:0.95rem; margin:0; color:var(--ink);">
+          awabarのような<strong>従業員が売上に直接影響する店</strong>では、<br>
+          「誰を、いつ配置するか」が売上を左右する。
+        </p>
+        <p style="font-size:0.9rem; margin-top:12px; margin-bottom:0;">
+          <strong class="accent">客呼びスキル</strong>: 自分の人脈やSNSで来客数を増やせる人<br>
+          <strong class="accent">客単価UPスキル</strong>: 接客で顧客満足度を高め、滞在時間・注文数を増やせる人
+        </p>
+      </div>
+
+      <div class="card" style="border-left:3px solid var(--orange);">
+        <h3 class="orange">前提と限界</h3>
+        <p style="font-size:0.9rem; margin:0;">
+          このスキルの数値化は<strong>属人性のある店</strong>だから成立する。<br>
+          チェーン店のようにオペレーションが均一化された店では別のアプローチが必要。<br><br>
+          <strong>私たちもこの仮説が正解だとは思っていない。</strong><br>
+          ここが議論したいポイントの一つ。
+        </p>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-bottom:10px;">Line 1: 最適化アプローチの進化</h3>
+        <p style="font-size:0.9rem; margin:0;">
+          <span class="tag tag-accent">Sprint 1</span> 予測で「人数」を最適化<br>
+          → 現場: 人数より<strong>「誰か」が大事</strong><br><br>
+          <span class="tag tag-accent">Sprint 2</span> 貢献度で「誰」を最適化<br>
+          → 貢献度だとエースに偏る。<strong>日によって必要な人材が違う</strong><br><br>
+          <span class="tag tag-accent">Sprint 3</span> 「スキル」で抽象化<br>
+          → <strong class="green">到達点</strong>: 日×スキルの組み合わせで柔軟に最適化
+        </p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--purple);">
+        <h3 style="margin-bottom:10px; color:var(--purple);">Line 2: LLM検証（並行で実施）</h3>
+        <p style="font-size:0.9rem; margin:0;">
+          <span class="tag tag-purple">Phase A</span> LLMアドバイス表示<br>
+          → 数理最適化の結果に対し、<strong>教育・満足など別観点</strong>から提案<br><br>
+          <span class="tag tag-purple">Phase B</span> LLMによる対話型シフト調整<br>
+          → LLMが調整案を生成し、<strong>ルールベースで違反確認→改善なら採用</strong>
+        </p>
+      </div>
+      <div style="margin-top:14px; padding:12px 16px; background:var(--surface-2); border-radius:8px;">
+        <p style="font-size:0.85rem; margin:0; color:var(--ink);">
+          <strong class="green">この2ラインが並行で進んだことが正解。</strong><br>
+          最適化の質（Line 1）とLLMの活用方法（Line 2）の両方を同時に追求し、最終アーキテクチャに到達。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== S5: User Flow ===== -->
+<section class="slide" id="s5">
+  <h2>ユーザーフロー — 店長のシフト作成体験</h2>
+
+  <div class="flow">
+    <div class="flow-step" style="border-left:3px solid var(--accent);">
+      <div class="flow-label">STEP 1</div>
+      <div class="flow-title">インプット設定</div>
+      <div class="flow-desc">スタッフのスキル定義<br>日別の必要スキル設定<br>シフト希望・休業日</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-left:3px solid var(--green);">
+      <div class="flow-label">STEP 2</div>
+      <div class="flow-title">数理最適化で<br>仮シフト生成</div>
+      <div class="flow-desc">スキル充足を最大化する<br>シフトを自動生成<br><strong style="color:var(--green);">（売上最適ベース）</strong></div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-left:3px solid var(--purple);">
+      <div class="flow-label">STEP 3</div>
+      <div class="flow-title">LLMとの対話で<br>調整</div>
+      <div class="flow-desc">予測に基づくアドバイスが届く<br>注文をつけて調整させ直す<br><strong style="color:var(--purple);">対話しながらシフトを磨く</strong></div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="border-left:3px solid var(--orange);">
+      <div class="flow-label">STEP 4</div>
+      <div class="flow-title">店長が<br>最終判断</div>
+      <div class="flow-desc">データと提案を見ながら<br>自分の直感と経験で<br><strong style="color:var(--orange);">最終決定</strong></div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:24px;">
+    <div class="card">
+      <h3>数理最適化の役割</h3>
+      <p style="margin:0; font-size:0.9rem;">
+        厳密な制約充足が得意。労働法規、希望時間、連勤制限、スキル充足を<strong>全て守った上で</strong>最適なシフトを算出。<br>
+        → <strong>ベースのシフトを作る</strong>
+      </p>
+    </div>
+    <div class="card">
+      <h3>LLM（さくらのAI）の役割</h3>
+      <p style="margin:0; font-size:0.9rem;">
+        <strong class="accent">1. アドバイス生成</strong> — スキル設定と予測結果をベースに、教育・バランス等の個別アドバイスを提示<br>
+        <strong class="accent">2. シフト調整</strong> — 「バレンタインは売上重視で」等の曖昧な要望にも対応し、シフトを調整
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== S6: Promise vs Reality ===== -->
+<section class="slide" id="s6">
+  <h2>2月の計画と実績</h2>
+
+  <div class="grid-2" style="margin-bottom:24px;">
+    <div class="card">
+      <h3>ライン1 — 売上管理（継続運用）</h3>
+      <p style="margin:0;">本番運用導入（現場FB → 要件確定 → 業務フロー → 導入）</p>
+    </div>
+    <div class="card">
+      <h3>ライン2 — シフトR&D（主目標）</h3>
+      <p style="margin:0;">売上予測 → 人員算出 → 対話調整の検証</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="border-left:3px solid var(--orange);">
+      <h3>実績: ライン1</h3>
+      <p style="margin:0; font-size:0.9rem;">稼働継続中。六本木店の売上も見たいとの要望と、表示情報の精査FBを受領。<strong class="orange">シフトR&Dに集中するため改修を一時停止中。</strong>3月以降に反映。</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--green);">
+      <h3>実績: ライン2</h3>
+      <p style="margin:0; font-size:0.9rem;"><strong class="green">当初想定を超える進化。</strong>3スプリントで仮説検証を繰り返し、スキルベース最適化に到達。LLM検証 + UIプロトタイプも完成。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== S7: Sprint Detail ===== -->
+<section class="slide" id="s7">
+  <h2>R&Dの進化 — 3スプリントの軌跡</h2>
+
+  <div class="sprint-flow">
+    <div class="sprint-step">
+      <div class="sprint-num">Sprint 1</div>
+      <div class="sprint-title">「人数」の最適化</div>
+      <div class="sprint-result">売上・来客数予測モデル（LightGBM）構築。予測に基づきシフト人数を動的変更。</div>
+      <div class="sprint-pivot">→ 現場の声:「何人」より「誰を」が重要</div>
+    </div>
+    <div class="sprint-step">
+      <div class="sprint-num">Sprint 2</div>
+      <div class="sprint-title">「配置」の最適化</div>
+      <div class="sprint-result">時間帯別売上貢献度を算出。売上優先/教育優先/中間の3モード実装。</div>
+      <div class="sprint-pivot">→ 貢献度だとエースに偏りすぎ。日によって必要な人材が違う</div>
+    </div>
+    <div class="sprint-step">
+      <div class="sprint-num">Sprint 3</div>
+      <div class="sprint-title">「スキルベース」最適化</div>
+      <div class="sprint-result">スキルDB + 日別要求カレンダー + スキル充足最適化 + LLMアドバイス。</div>
+      <div class="sprint-arrive">→ 到達点: 属人性排除 × 横展開可能な基盤</div>
+    </div>
+  </div>
+
+  <div style="margin-top:24px;">
+    <h2 style="font-size:1.4rem;">LLM検証の進化 — たどり着いたアーキテクチャ</h2>
+
+    <div class="sprint-flow" style="margin-top:16px;">
+      <div class="sprint-step">
+        <div class="sprint-num">Step 1</div>
+        <div class="sprint-title">LLMプロンプトで<br>シフト作成</div>
+        <div class="sprint-result">LLMだけにプロンプトでシフトを組ませる。</div>
+        <div class="sprint-pivot">→ 制約違反が多発。厳密な制約充足は困難</div>
+      </div>
+      <div class="sprint-step">
+        <div class="sprint-num">Step 2</div>
+        <div class="sprint-title">LLMエージェント<br>ループ</div>
+        <div class="sprint-result">LLM仮シフト作成 → ルールベースで違反確認 → LLMが修正。ループで改善。</div>
+        <div class="sprint-pivot">→ 厳密評価すると数理最適化には勝てず</div>
+      </div>
+      <div class="sprint-step">
+        <div class="sprint-num">到達点</div>
+        <div class="sprint-title">数理最適化 +<br>LLM調整</div>
+        <div class="sprint-result">両方を組み合わせた最終アーキテクチャ。</div>
+        <div class="sprint-arrive">→ 数理最適化の厳密性 × LLMの文脈判断</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px; border-left:3px solid var(--green);">
+      <h3 class="green">数理最適化 + LLM調整の詳細</h3>
+      <div class="flow" style="margin:12px 0;">
+        <div class="flow-step" style="border-left:3px solid var(--accent);">
+          <div class="flow-label">1</div>
+          <div class="flow-title">数理最適化</div>
+          <div class="flow-desc">ベースシフトを生成</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-left:3px solid var(--orange);">
+          <div class="flow-label">2</div>
+          <div class="flow-title">ルールベース確認</div>
+          <div class="flow-desc">プログラムで<br>違反件数を算出</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-left:3px solid var(--purple);">
+          <div class="flow-label">3</div>
+          <div class="flow-title">LLMが調整案作成</div>
+          <div class="flow-desc">文脈を踏まえた<br>新しいシフト案</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-left:3px solid var(--orange);">
+          <div class="flow-label">4</div>
+          <div class="flow-title">ルールベース再確認</div>
+          <div class="flow-desc">調整後の<br>違反件数を算出</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-left:3px solid var(--green);">
+          <div class="flow-label">5</div>
+          <div class="flow-title">比較・採用</div>
+          <div class="flow-desc">違反が減っていれば<br>LLM案を採用</div>
+        </div>
+      </div>
+      <p style="margin:0; font-size:0.88rem;">
+        数理最適化が厳密な制約を守ったベースを作り、LLMが教育・バランス等の観点で調整を提案。<br>
+        <strong>ルールベースの違反チェックがゲートキーパーとなり、改善が保証された調整だけが採用される。</strong>
+      </p>
+    </div>
+
+    <div class="card" style="margin-top:16px; border-left:3px solid var(--orange);">
+      <h3 class="orange">なぜハイブリッドか — LLMモデル比較の結果</h3>
+      <p style="margin:0; font-size:0.88rem;">
+        2025年6月時点のGPT-o1 Proと、現在の最新モデル（Gemini 3.0 Pro、Claude Opus 4.6）でLLM単体のシフト生成を比較検証。<br>
+        結果、<strong>世代が進んでもLLM単体でのシフト生成品質はそこまで変わらなかった。</strong><br>
+        → LLMに最適化問題は解けないという判断。<strong class="accent">ハイブリッドアーキテクチャの妥当性を確認。</strong>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== S8: Current State ===== -->
+<section class="slide" id="s8">
+  <h2>現在の状態</h2>
+  <div class="grid-3">
+    <div class="card">
+      <span class="tag tag-green">稼働中</span>
+      <h3 style="margin-top:12px;">本番運用</h3>
+      <ul style="list-style:none; padding:0;">
+        <li style="margin-bottom:10px; font-size:0.88rem;">シフト最適化エンジン<br><span class="muted">OR-Tools + Notion + Slack</span></li>
+        <li style="margin-bottom:10px; font-size:0.88rem;">売上管理<br><span class="muted">スマレジ → Slack自動報告</span></li>
+        <li style="margin-bottom:10px; font-size:0.88rem;">チャットボット<br><span class="muted">さくらのAI / 顧客管理 / 日報</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="tag tag-orange">技術立証済み</span>
+      <h3 style="margin-top:12px;">プロダクト化待ち</h3>
+      <ul style="list-style:none; padding:0;">
+        <li style="margin-bottom:10px; font-size:0.88rem;"><strong>スキルベースシフト最適化</strong><br><span class="muted">スキル × 日別要求 × 最適化</span></li>
+        <li style="margin-bottom:10px; font-size:0.88rem;"><strong>売上予測モデル</strong><br><span class="muted">LightGBM / 天気・イベント</span></li>
+        <li style="margin-bottom:10px; font-size:0.88rem;"><strong>LLMアドバイス</strong><br><span class="muted">OJT・教育・バランス提案</span></li>
+        <li style="margin-bottom:10px; font-size:0.88rem;"><strong>LLMによるシフト調整</strong><br><span class="muted">ルールベース検証 × 違反比較で採用判定</span></li>
+        <li style="margin-bottom:10px; font-size:0.88rem;"><strong>売上貢献度算出</strong><br><span class="muted">時間帯別の公平指標</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="tag tag-purple">今後</span>
+      <h3 style="margin-top:12px;">これから作る</h3>
+      <ul style="list-style:none; padding:0;">
+        <li style="margin-bottom:10px; font-size:0.88rem;"><strong>テンプレート機能</strong><br><span class="muted">他店舗が即座に使える状態に</span></li>
+        <li style="margin-bottom:10px; font-size:0.88rem;"><strong>PDCA機能</strong><br><span class="muted">仮説→結果の可視化・蓄積</span></li>
+        <li style="margin-bottom:10px; font-size:0.88rem;"><strong>LINE連携</strong><br><span class="muted">従業員のシフト提出・確認</span></li>
+        <li style="margin-bottom:10px; font-size:0.88rem;"><strong>フィジカルAI連携</strong><br><span class="muted">カメラ・センサー（将来）</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== S9: Roadmap ===== -->
+<section class="slide" id="s9">
+  <h2>ロードマップ（仮案）</h2>
+  <p class="muted" style="margin-top:-20px; margin-bottom:24px; font-size:0.85rem;">R&Dと実証実験のための実装が並行で進むイメージ</p>
+  <div class="grid-2">
+    <div>
+      <h3 style="margin-bottom:16px; font-size:0.9rem; color:var(--accent);">実装・実証ライン</h3>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-date">3月</div>
+          <div class="timeline-text"><strong>R&D成果の実装</strong></div>
+          <div class="timeline-sub">スキルに基づくシフト最適化機能・売上予測・LLMによるシフト調整の実装</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-date">3月末〜</div>
+          <div class="timeline-text"><strong>福岡店で実証開始</strong></div>
+          <div class="timeline-sub">R&D成果を本番統合。実店舗でスキルベース最適化を運用</div>
+        </div>
+        <div class="timeline-item future">
+          <div class="timeline-date">4月〜5月</div>
+          <div class="timeline-text"><strong>テンプレート機能の実装</strong></div>
+          <div class="timeline-sub">福岡の実証データを元に、他店舗が簡単に使い始められる機能として確立</div>
+        </div>
+        <div class="timeline-item future">
+          <div class="timeline-date">5月末〜</div>
+          <div class="timeline-text"><strong>六本木店で運用開始</strong></div>
+          <div class="timeline-sub">テンプレート機能で迅速に横展開</div>
+        </div>
+        <div class="timeline-item future">
+          <div class="timeline-date">6月〜</div>
+          <div class="timeline-text">外部店舗への提供準備</div>
+          <div class="timeline-sub">2店舗の実証データを元に横展開開始</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:16px; font-size:0.9rem; color:var(--purple);">今後のR&D課題</h3>
+      <div class="card" style="margin-bottom:16px; border-left:3px solid var(--purple);">
+        <ul style="list-style:none; padding:0; margin:0;">
+          <li style="margin-bottom:8px; font-size:0.88rem;"><span class="tag tag-purple" style="margin-right:4px;">要件定義</span> スキル設定 — どんなスキルを入れるか、どう仮説を立てるか。店舗の方と一緒に議論</li>
+          <li style="margin-bottom:8px; font-size:0.88rem;"><span class="tag tag-purple" style="margin-right:4px;">要件定義</span> LLMによるアドバイスの要件定義</li>
+          <li style="margin-bottom:8px; font-size:0.88rem;"><span class="tag tag-orange" style="margin-right:4px;">ブラッシュアップ</span> 売上貢献度の算出方法</li>
+          <li style="margin-bottom:8px; font-size:0.88rem;"><span class="tag tag-orange" style="margin-right:4px;">ブラッシュアップ</span> スキルベース最適化 — 各種条件で実験し、実運用に耐えうる結果が出るか</li>
+          <li style="margin-bottom:0; font-size:0.88rem;"><span class="tag tag-accent" style="margin-right:4px;">将来</span> PDCA機能 / LINE連携 / フィジカルAI連携</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-bottom:16px; border-left:3px solid var(--orange);">
+        <h4 class="orange">進め方のイメージ</h4>
+        <p style="margin:0; font-size:0.88rem;">
+          マイルストーンは左の通り提案しつつ、<strong>実施事項はこれから細かく議論していく</strong>。<br>
+          スキル設定や仮説の立て方は、店舗の方とも一緒に考えていきたい。
+        </p>
+      </div>
+      <div class="card">
+        <h3 class="purple">将来のビジネス</h3>
+        <p style="margin:0; font-size:0.9rem;">シフト最適化は<strong>エントリーポイント</strong>。この基盤の上にカメラ連携・エージェント連携を積み上げていく。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== S10: Discussion ===== -->
+<section class="slide" id="s10">
+  <h2>ご相談</h2>
+
+  <div class="discussion-item">
+    <p><strong class="accent">1.</strong> 「スキルで売上が上がる」という仮説。awabarのような属人性のある店なら成立すると考えているが、<strong>この仮説をどう見るか？</strong></p>
+  </div>
+  <div class="discussion-item">
+    <p><strong class="accent">2.</strong> 「売上予測 × スキルベース × 数理最適化 × LLM」の方向性。<strong>この技術アプローチで進めてよいか？</strong></p>
+  </div>
+  <div class="discussion-item">
+    <p><strong class="accent">3.</strong> 3月末に福岡、4月に六本木で運用開始予定。<strong>スケジュール感は問題ないか？</strong></p>
+  </div>
+  <div class="discussion-item">
+    <p><strong class="accent">4.</strong> テンプレート機能が揃えば他店舗にも展開可能。<strong>次に狙うべき店舗・領域は？</strong></p>
+  </div>
+
+  <div style="margin-top:32px; padding:20px 24px; background:var(--surface); border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+    <p style="margin:0 0 8px 0; font-size:0.9rem;"><strong class="accent">プロダクトUIプロトタイプ</strong></p>
+    <p style="margin:0; font-size:0.85rem; color:var(--ink-muted);">最終的なプロダクトイメージをインタラクティブHTMLで具現化しています → <a href="product_prototype.html" style="color:var(--accent);" target="_blank">プロトタイプを開く</a></p>
+  </div>
+  <p style="margin-top:16px;">
+    <span class="muted">以降 Appendix: R&D詳細 / 技術アーキテクチャ / 機能ステータス / 想定Q&A / 将来ビジョン</span>
+  </p>
+</section>
+
+<!-- ========================================== -->
+<!-- APPENDIX -->
+<!-- ========================================== -->
+
+<!-- ===== App A: Sprint Detail ===== -->
+<section class="slide appendix" id="a1">
+  <div class="appendix-label">Appendix A</div>
+  <h2>R&D詳細 — Sprint 1</h2>
+  <div class="grid-2">
+    <div>
+      <h3>仮説</h3>
+      <p>営業日によって必要な人員数は異なる。売上・来客数の予測で最適な人数を算出できるのでは？</p>
+      <h3>開発内容</h3>
+      <ul style="padding-left:20px; font-size:0.9rem; color:var(--ink-muted);">
+        <li>来客数予測モデル（LightGBM）: POS・天気・イベント・日付特徴量</li>
+        <li>売上予測モデル: 同上。概ね良好な精度</li>
+        <li>予測ベースシフト生成: 来客数→スロット数の動的変更</li>
+        <li>LLMアドバイスv1: 来客数×売上で接客/オペレーション重視を提案</li>
+      </ul>
+    </div>
+    <div>
+      <h3>結果</h3>
+      <p>予測モデルは動作したが「取引件数 ≠ 来客数」の根本課題が発覚。</p>
+      <h3 class="orange">ピボット理由</h3>
+      <p>現場ヒアリングで「何人配置するか」よりも<strong>「売上に貢献するメンバーを多く配置したい」</strong>という要望。</p>
+      <p>→ Sprint 2: 売上貢献度ベースの配置最適化へ</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide appendix" id="a2">
+  <div class="appendix-label">Appendix A</div>
+  <h2>R&D詳細 — Sprint 2</h2>
+  <div class="grid-2">
+    <div>
+      <h3>仮説</h3>
+      <p>売上貢献度の高いメンバーを配置すれば売上が上がるのでは？</p>
+      <h3>開発内容</h3>
+      <ul style="padding-left:20px; font-size:0.9rem; color:var(--ink-muted);">
+        <li>時間帯別売上貢献度の算出（2/24に計算式改良）</li>
+        <li>3モードシフト生成（売上優先/教育優先/中間）</li>
+        <li>LLMアドバイスv2: 売上予測高低日のスタッフ入替レコメンド</li>
+      </ul>
+      <h3 style="margin-top:16px;">貢献度の計算式</h3>
+      <p style="font-size:0.85rem;">
+        時間帯別分配売上 = 時間帯売上 × (スタッフ勤務時間 / 全スタッフ合計)<br>
+        時間帯別貢献度 = スタッフの平均分配売上 / 全体平均<br>
+        → 時間帯・曜日の差異を吸収した公平な指標
+      </p>
+    </div>
+    <div>
+      <h3>結果</h3>
+      <p>3モード実装完了。異なる出力を確認。</p>
+      <h3 class="orange">課題</h3>
+      <p>売上優先モードでは特定のエース（牛之浜等）に偏りすぎ、非実用的。</p>
+      <h3 class="orange">ピボット理由</h3>
+      <p>「呼べる客を増やしたい日」「客単価を上げたい日」など、<strong>日によって求められる人材の性質が異なる</strong>。</p>
+      <p>→ Sprint 3: スキルベース最適化へ</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide appendix" id="a3">
+  <div class="appendix-label">Appendix A</div>
+  <h2>R&D詳細 — Sprint 3（到達点）</h2>
+  <div class="grid-2">
+    <div>
+      <h3>仮説</h3>
+      <p>「個人の貢献度」ではなく「スキル」で抽象化すれば、日別の要求に柔軟に対応できるのでは？</p>
+      <h3>開発内容</h3>
+      <ul style="padding-left:20px; font-size:0.9rem; color:var(--ink-muted);">
+        <li><strong>スタッフスキルDB</strong>（Notion新設）: 客呼び/客単価UP等をマルチセレクト</li>
+        <li><strong>スキルカレンダーDB</strong>（Notion新設）: 日別必要スキル。売上予測で自動設定+手動上書き</li>
+        <li>スキル充足度を目的関数に追加</li>
+        <li>LLMアドバイスv3: スキル保有者×中程度売上日→未保有者のOJTアサイン提案</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="green">結果</h3>
+      <p><strong class="green">実装完了。</strong>スキル定義→カレンダー設定→最適化→LLMアドバイスの一連フローが動作。</p>
+      <h3>技術ポイント</h3>
+      <ul style="padding-left:20px; font-size:0.9rem; color:var(--ink-muted);">
+        <li>目的関数の係数チューニングでスキル充足とスロット充足のバランスを調整</li>
+        <li>さくらのAI（国産LLM）でデータが国外に出ない設計</li>
+        <li>「スキル」という汎用変数で店舗ごとに定義を変えるだけで横展開可能</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== App B: Architecture ===== -->
+<section class="slide appendix" id="a4">
+  <div class="appendix-label">Appendix B</div>
+  <h2>技術アーキテクチャ</h2>
+  <div class="grid-2">
+    <div>
+      <h3>リポジトリ構成</h3>
+      <table>
+        <tr><th>リポ</th><th>言語</th><th>役割</th><th>デプロイ</th></tr>
+        <tr><td>awbacf</td><td>TypeScript</td><td>売上管理 + Bot + 予測</td><td>Vercel</td></tr>
+        <tr><td>scheduling</td><td>Python</td><td>シフト最適化 + R&D</td><td>GCP Cloud Run</td></tr>
+      </table>
+      <h3>Notion DB構成（2月に3DB新設）</h3>
+      <table>
+        <tr><th>DB</th><th>状態</th></tr>
+        <tr><td>シフト/希望/スタッフ/休業日/イベント/売上/日報/顧客/目標</td><td>既存</td></tr>
+        <tr><td style="color:var(--green);"><strong>スタッフスキルDB</strong></td><td><span class="tag tag-green">2月新設</span></td></tr>
+        <tr><td style="color:var(--green);"><strong>スキルカレンダーDB</strong></td><td><span class="tag tag-green">2月新設</span></td></tr>
+        <tr><td style="color:var(--green);"><strong>予測結果DB</strong></td><td><span class="tag tag-green">2月新設</span></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>数理最適化の目的関数</h3>
+      <table>
+        <tr><th>目的</th><th>係数</th><th>優先度</th></tr>
+        <tr><td>全スロット充足</td><td>1000</td><td>最高</td></tr>
+        <tr><td>最大スタッフ数抑制</td><td>1000</td><td>最高</td></tr>
+        <tr><td>希望時間適合</td><td>100</td><td>高</td></tr>
+        <tr><td>連勤制限</td><td>100</td><td>高</td></tr>
+        <tr><td>最低配置率</td><td>100</td><td>高</td></tr>
+        <tr><td>スタッフ分散度</td><td>30</td><td>中</td></tr>
+        <tr><td>売上貢献度優先</td><td>0.1</td><td>低</td></tr>
+      </table>
+      <p style="font-size:0.82rem;">→ 制約を全て守った上で、スキル充足と教育バランスを最大化する設計。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== App C: Status ===== -->
+<section class="slide appendix" id="a5">
+  <div class="appendix-label">Appendix C</div>
+  <h2>機能ステータス一覧</h2>
+  <div class="grid-2">
+    <div>
+      <h3>2月の実施事項</h3>
+      <table>
+        <tr><th>ステータス</th><th>機能</th></tr>
+        <tr><td><span class="tag tag-green">完了</span></td><td>来客数予測モデル</td></tr>
+        <tr><td><span class="tag tag-green">完了</span></td><td>売上予測モデル</td></tr>
+        <tr><td><span class="tag tag-green">完了</span></td><td>来客数予測ベースシフト生成</td></tr>
+        <tr><td><span class="tag tag-green">完了</span></td><td>LLMシフトアドバイスv1</td></tr>
+        <tr><td><span class="tag tag-green">完了</span></td><td>売上貢献度算出（2/24改良）</td></tr>
+        <tr><td><span class="tag tag-green">完了</span></td><td>売上貢献度シフト生成（3モード）</td></tr>
+        <tr><td><span class="tag tag-green">完了</span></td><td>LLMシフトアドバイスv2</td></tr>
+        <tr><td><span class="tag tag-green">完了</span></td><td>スキルベースシフト最適化</td></tr>
+        <tr><td><span class="tag tag-orange">進行中</span></td><td>LLM最適化検証（数理最適化比較）</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>本番稼働中の機能</h3>
+      <table>
+        <tr><th>カテゴリ</th><th>機能</th></tr>
+        <tr><td>売上管理</td><td>売上確認・目標確認・分析</td></tr>
+        <tr><td>売上管理</td><td>朝9時 自動報告 / 夕方6時 目標通知</td></tr>
+        <tr><td>顧客管理</td><td>顧客検索・登録</td></tr>
+        <tr><td>シフト</td><td>人件費算出 / 希望→最適化→生成</td></tr>
+      </table>
+      <h3 style="margin-top:20px;">開発予定</h3>
+      <table>
+        <tr><th>機能</th><th>優先度</th></tr>
+        <tr><td>シフトテンプレート</td><td><span class="tag tag-red">最高</span></td></tr>
+        <tr><td>PDCA機能</td><td><span class="tag tag-orange">高</span></td></tr>
+        <tr><td>LINE連携</td><td><span class="tag tag-accent">中</span></td></tr>
+        <tr><td>セマンティックカメラ連携</td><td><span class="tag tag-purple">将来</span></td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===== App D: Q&A ===== -->
+<section class="slide appendix" id="a6">
+  <div class="appendix-label">Appendix D</div>
+  <h2>想定Q&A</h2>
+  <div class="grid-2">
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Q: スキルの数値化は一般的にできるのか？</h3>
+        <p style="margin:0; font-size:0.88rem;">awabarのように従業員が集客・単価に直接影響する店では成立する。チェーン店など均一オペレーションの店では別アプローチが必要。まずは高接客の飲食店をターゲットにしている。</p>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Q: なぜスキルベースにピボットした？</h3>
+        <p style="margin:0; font-size:0.88rem;">売上貢献度だと「貢献度が高い人=常に出勤すべき」になり偏る。日によって「客を呼びたい」「単価を上げたい」と必要な人材が違う。スキルで定義すればこの柔軟性が実現できる。</p>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Q: さくらのAIを使う理由は？</h3>
+        <p style="margin:0; font-size:0.88rem;">飲食店の売上・スタッフ・顧客情報は機密性が高い。国産LLMでデータが国外に出ない。さくらインターネットのインフラで完結。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Q: 他店舗展開に何が必要？</h3>
+        <p style="margin:0; font-size:0.88rem;">①テンプレート機能（スキル定義をテンプレ化）②データ連携の汎用化（POS統合層）③Notion DBの自動セットアップ。スキルという抽象化で、店舗ごとに重要な能力を自由定義できる。</p>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <h3>Q: 売上予測の精度は？</h3>
+        <p style="margin:0; font-size:0.88rem;">LightGBM使用。POS・天気・イベント・日付特徴量。売上予測は概ね良好。来客数は「取引件数≠来客数」課題あり。将来カメラで正確な来客数取得を想定。</p>
+      </div>
+      <div class="card">
+        <h3>Q: フィジカルAI連携の具体像は？</h3>
+        <p style="margin:0; font-size:0.88rem;">セマンティックカメラで来客識別→エージェントが過去DBから好みの話題を察知→従業員のデバイスに表示。最終的にはこの「おもてなしデータ」をヒューマノイドに学習させる基盤に。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== App E: Vision ===== -->
+<section class="slide appendix" id="a7">
+  <div class="appendix-label">Appendix E</div>
+  <h2>将来ビジョン — awabarから始まるデータビジネス</h2>
+
+  <div style="display:flex; gap:0; align-items:stretch; margin-bottom:24px;">
+    <div class="card" style="flex:1; border-top:3px solid var(--accent); border-radius:12px 0 0 12px;">
+      <span class="tag tag-accent">Phase 1: 現在</span>
+      <h3 style="margin-top:10px;">スキルベースシフト最適化</h3>
+      <p style="font-size:0.88rem; margin:0;">
+        従業員が集客・単価に影響できる<strong>高接客の飲食店</strong>をターゲットに、<br>
+        「売上が上がるシフト」を組めるツールを提供。<br>
+        awabar→福岡→六本木→外部店舗へ。
+      </p>
+    </div>
+    <div class="card" style="flex:1; border-top:3px solid var(--green); border-radius:0;">
+      <span class="tag tag-green">Phase 2: 次</span>
+      <h3 style="margin-top:10px;">カメラ × エージェント連携</h3>
+      <p style="font-size:0.88rem; margin:0;">
+        セマンティックカメラで来客を識別。<br>
+        エージェントがDBから<strong>好みの話題・過去の注文</strong>を察知し、<br>
+        従業員のデバイスに表示。<br>
+        <strong>「おもてなし」をデータで支援。</strong>
+      </p>
+    </div>
+    <div class="card" style="flex:1; border-top:3px solid var(--purple); border-radius:0 12px 12px 0;">
+      <span class="tag tag-purple">Phase 3: 将来</span>
+      <h3 style="margin-top:10px;">接客データプラットフォーム</h3>
+      <p style="font-size:0.88rem; margin:0;">
+        高度な接客 — 察し、おもてなし、空気を読む —<br>
+        これをデータとして蓄積。<br>
+        日本の飲食店というニッチで<strong>そのデータを持っている会社</strong>になる。
+      </p>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--orange);">
+    <p style="margin:0; font-size:0.95rem; color:var(--ink);">
+      <strong class="orange">今やっていること</strong>: Phase 1を成立させること。まず「シフトで売上が上がる」を証明し、店舗に入り込む。<br>
+      <strong class="orange">そこから</strong>: カメラ・センサーを入れてデータを蓄積し、飲食店の「暗黙知」をデジタル化していく。
+    </p>
+  </div>
+</section>
+
+<script>
+// Build nav dynamically
+const allSlides = document.querySelectorAll('.slide');
+const nav = document.getElementById('pageNav');
+allSlides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + s.id;
+  a.title = s.querySelector('h2')?.textContent || 'Slide ' + (i+1);
+  nav.appendChild(a);
+});
+// Highlight current
+const navLinks = nav.querySelectorAll('a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const id = e.target.id;
+      navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+    }
+  });
+}, { threshold: 0.3 });
+allSlides.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
